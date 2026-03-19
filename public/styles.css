@@ -449,7 +449,7 @@ will-change:transform
 .more-btn:active{transform:scale(.98);background:#a8c0d0}
 
 /* ── Screen Map ─────────────────────────────────────────── */
-#screen-map{display:flex;flex-direction:column;overflow:hidden}
+#screen-map.active{overflow:hidden}
 .map-screen-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--white);border-bottom:1px solid rgba(26,46,58,.06);flex-shrink:0;z-index:10}
 .map-screen-title{font-weight:600;font-size:15px;color:var(--dark);flex:1;text-align:center}
 .map-hdr-actions{display:flex;gap:8px}

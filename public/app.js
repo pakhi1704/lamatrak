@@ -74,7 +74,6 @@ var App={
     document.getElementById('dash-site').textContent=SITES[activeSite]||'Port Stewart';
     Nav.go('dashboard');
     setTimeout(function(){App.updateSafety()},100);
-    setTimeout(function(){App.updateMap()},200);
     setTimeout(function(){App.updateCoverage()},300);
     setTimeout(function(){App.updateSpecies()},400);
     setTimeout(function(){App.updateTimeline()},500);
@@ -154,46 +153,6 @@ var App={
   simUV:function(h){if(h<6||h>18)return 0;if(h<8)return Math.round(2+(h-6)*2.5);if(h<11)return Math.round(7+(h-8)*1.5);if(h<=14)return Math.round(11+Math.sin(h)*1.5);if(h<17)return Math.round(11-(h-14)*2.8);return Math.round(3-(h-17)*1.5)},
   simTemp:function(h){if(h<6)return 24;if(h<10)return Math.round(24+(h-6)*2.2);if(h<=15)return Math.round(32+Math.sin(h*0.5)*3);if(h<19)return Math.round(33-(h-15)*2);return 26},
   simWind:function(h){return Math.round(12+Math.sin(h*0.8)*10+Math.random()*5)},
-
-  /* ── MAP ── */
-  updateMap:function(){
-    var sites=['port_stewart','silver_plains','lilyvale','marina_plains'];
-    var demoData={
-      port_stewart:{patrols:3,obs:5,last:'Today',status:'active'},
-      silver_plains:{patrols:1,obs:2,last:'Today',status:'active'},
-      lilyvale:{patrols:0,obs:0,last:'3 days ago',status:'overdue'},
-      marina_plains:{patrols:0,obs:0,last:'12 days ago',status:'inactive'}
-    };
-    sites.forEach(function(s){
-      var data=demoData[s];
-      var dot=document.querySelector('#site-'+s+' .site-dot');
-      var pulse=document.querySelector('#site-'+s+' .site-pulse');
-      if(data.status==='active'){dot.style.fill='var(--success)';pulse.style.stroke='var(--success)'}
-      else if(data.status==='overdue'){dot.style.fill='var(--warning)';pulse.style.stroke='var(--warning)'}
-      else{dot.style.fill='var(--text-muted)';pulse.style.stroke='var(--text-muted)';pulse.style.animation='none'}
-    });
-    // Highlight active site
-    var activeDot=document.querySelector('#site-'+activeSite+' .site-dot');
-    if(activeDot)activeDot.setAttribute('r','8')
-  },
-
-  showSiteInfo:function(site){
-    var demoData={
-      port_stewart:{name:'Port Stewart (HQ)',patrols:3,obs:5,last:'Today',status:'active'},
-      silver_plains:{name:'Silver Plains',patrols:1,obs:2,last:'Today',status:'active'},
-      lilyvale:{name:'Lilyvale',patrols:0,obs:0,last:'3 days ago',status:'overdue'},
-      marina_plains:{name:'Marina Plains',patrols:0,obs:0,last:'12 days ago',status:'inactive'}
-    };
-    var d=demoData[site]||demoData.port_stewart;
-    document.getElementById('sip-name').textContent=d.name;
-    document.getElementById('sip-patrols').textContent=d.patrols;
-    document.getElementById('sip-obs').textContent=d.obs;
-    document.getElementById('sip-last').textContent=d.last;
-    var st=document.getElementById('sip-status');
-    st.textContent=d.status.toUpperCase();
-    st.className='sip-status '+d.status;
-    document.getElementById('site-info-popup').style.display='block'
-  },
 
   /* ── SPECIES ── */
   updateSpecies:async function(){
@@ -353,7 +312,7 @@ var Nav={go:function(screen){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   var t=document.getElementById('screen-'+screen);if(t)t.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(function(b){b.classList.toggle('active',b.dataset.screen===screen)});
-  if(screen==='dashboard'){App.updateCoverage();App.updateSync();App.updateSafety();App.updateSpecies();App.updateTimeline();App.updateMap()}
+  if(screen==='dashboard'){App.updateCoverage();App.updateSync();App.updateSafety();App.updateSpecies();App.updateTimeline()}
   if(screen==='record'){
     document.getElementById('record-no-patrol').style.display='none';document.getElementById('record-type-picker').style.display='block';document.getElementById('record-form-area').style.display='none';
   }
