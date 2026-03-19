@@ -1,4 +1,4 @@
-var CACHE_NAME = 'lamatrak-v4';
+var CACHE_NAME = 'lamatrak-app';
 var ASSETS = ['/', '/index.html', '/styles.css', '/db.js', '/sync.js', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', function(event) {
@@ -15,17 +15,31 @@ self.addEventListener('activate', function(event) {
 
 self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
+
+  // API and uploads: network-only, offline error fallback
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) {
     event.respondWith(fetch(event.request).catch(function() {
       return new Response(JSON.stringify({ error: 'offline' }), { headers: { 'Content-Type': 'application/json' }, status: 503 });
     }));
     return;
   }
-  event.respondWith(caches.match(event.request).then(function(cached) {
-    if (cached) return cached;
-    return fetch(event.request).then(function(resp) {
-      if (resp.ok) { var c = resp.clone(); caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, c); }); }
-      return resp;
-    }).catch(function() { if (event.request.mode === 'navigate') return caches.match('/index.html'); });
-  }));
+
+  // App shell: stale-while-revalidate
+  // Serve cache immediately, update cache in background — instant load even offline/slow satellite
+  event.respondWith(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.match(event.request).then(function(cached) {
+        var networkFetch = fetch(event.request).then(function(resp) {
+          if (resp.ok) cache.put(event.request, resp.clone());
+          return resp;
+        }).catch(function() { return null; });
+
+        // Return cached immediately if available, otherwise wait for network
+        return cached || networkFetch.then(function(resp) {
+          if (resp) return resp;
+          if (event.request.mode === 'navigate') return cache.match('/index.html');
+        });
+      });
+    })
+  );
 });
