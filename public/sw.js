@@ -1,4 +1,4 @@
-var CACHE_NAME = 'lamatrak-v1';
+var CACHE_NAME = 'lamatrak-v2';
 var ASSETS = ['/', '/index.html', '/styles.css', '/db.js', '/sync.js', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', function(event) {

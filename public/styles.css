@@ -447,3 +447,31 @@ will-change:transform
 .settings-val{font-size:13px;font-weight:600;color:#1a2e3a}
 .more-btn{width:100%;padding:14px;border:none;border-radius:12px;background:#C8D9E6;color:#1a2e3a;font-family:Poppins,sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;margin-top:12px}
 .more-btn:active{transform:scale(.98);background:#a8c0d0}
+
+/* ── Screen Map ─────────────────────────────────────────── */
+#screen-map{display:flex;flex-direction:column;overflow:hidden}
+.map-screen-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--white);border-bottom:1px solid rgba(26,46,58,.06);flex-shrink:0;z-index:10}
+.map-screen-title{font-weight:600;font-size:15px;color:var(--dark);flex:1;text-align:center}
+.map-hdr-actions{display:flex;gap:8px}
+.map-ctrl-btn{width:36px;height:36px;border-radius:var(--r-xs);border:1.5px solid var(--bg);background:var(--white);color:var(--dark);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0}
+.map-ctrl-btn:active{transform:scale(.93)}
+.map-ctrl-btn--on{background:var(--primary);border-color:#7aaec8;color:var(--dark)}
+.patrol-map-wrap{flex:1;min-height:0}
+.map-bottom-panel{background:var(--white);border-top:1px solid rgba(26,46,58,.06);padding:10px 16px 14px;flex-shrink:0;z-index:10;display:flex;flex-direction:column;gap:6px}
+.map-stats-row{display:flex;gap:6px;flex-wrap:wrap}
+.map-stat-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--bg);border-radius:20px;font-size:12px;color:var(--text);font-weight:500}
+.map-gap-row{display:flex;gap:6px;flex-wrap:wrap}
+.map-gap-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#fff8e6;border:1px solid rgba(245,158,11,.25);border-radius:20px;font-size:12px;color:#92400e;font-weight:500}
+.map-legend-row{display:flex;gap:12px}
+.ml-item{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)}
+.ml-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.ml-active{background:#22c55e}
+.ml-today{background:#22c55e;opacity:.45}
+.ml-gap{background:#f59e0b}
+.ml-site{background:#4a7fa5}
+/* Site marker pins (Leaflet divIcon) */
+.map-site-pin{width:14px;height:14px;border-radius:50%;background:#4a7fa5;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.map-site-pin--active{background:#22c55e}
+/* Leaflet tooltip overrides */
+.map-site-tooltip,.map-gap-tooltip{font-size:12px;font-family:Poppins,sans-serif;background:#1a2e3a;color:#fff;border:none;border-radius:6px;padding:3px 8px;box-shadow:none}
+.map-site-tooltip::before,.map-gap-tooltip::before,.map-site-tooltip.leaflet-tooltip-top::before,.map-gap-tooltip.leaflet-tooltip-top::before{border-top-color:#1a2e3a}

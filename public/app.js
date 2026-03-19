@@ -360,6 +360,7 @@ var Nav={go:function(screen){
   if(screen==='more'){
     if(currentUser){document.getElementById('set-ranger').textContent=currentUser.name;document.getElementById('set-role').textContent=currentUser.role.replace('_',' ');document.getElementById('set-site').textContent=SITES[activeSite]||activeSite}
   }
+  if(screen==='map'){PatrolMap.show()}
 }};
 
 /* ══ PATROL ══ */
@@ -400,6 +401,148 @@ var GPS={
   getCurrentPosition:function(){return new Promise(function(resolve){if(!navigator.geolocation){resolve(null);return}navigator.geolocation.getCurrentPosition(function(p){GPS.lastPosition=p;resolve(p)},function(){resolve(null)},{enableHighAccuracy:true,timeout:10000})})},
   startTracking:function(pid){if(!navigator.geolocation)return;gpsWatchId=navigator.geolocation.watchPosition(async function(p){GPS.lastPosition=p;await LocalDB.addTrackPoint(pid,p.coords.latitude,p.coords.longitude,p.coords.altitude,p.coords.accuracy);trackPointCount++},function(){},{enableHighAccuracy:true,maximumAge:10000,timeout:15000})},
   stopTracking:function(){if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null}}
+};
+
+/* ══ PATROL MAP ══ */
+var PatrolMap={
+  map:null,heatLayer:null,trailGroup:null,gapGroup:null,siteGroup:null,heatOn:false,initialized:false,
+  SITES:{
+    port_stewart:{name:'Port Stewart (HQ)',lat:-14.850,lng:144.320},
+    silver_plains:{name:'Silver Plains',lat:-15.100,lng:144.100},
+    lilyvale:{name:'Lilyvale',lat:-15.350,lng:143.950},
+    marina_plains:{name:'Marina Plains',lat:-14.750,lng:144.550}
+  },
+  show:function(){
+    if(!PatrolMap.initialized){PatrolMap.init()}
+    else{setTimeout(function(){PatrolMap.map.invalidateSize()},50)}
+    PatrolMap.loadAndRender();
+    if(!navigator.onLine)Toast.show('Offline \u2014 map tiles unavailable','warning')
+  },
+  init:function(){
+    PatrolMap.map=L.map('patrol-map',{zoomControl:true,attributionControl:true,tap:true}).setView([-14.95,144.15],11);
+    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'\xa9 OpenTopoMap contributors'}).addTo(PatrolMap.map);
+    PatrolMap.trailGroup=L.layerGroup().addTo(PatrolMap.map);
+    PatrolMap.gapGroup=L.layerGroup().addTo(PatrolMap.map);
+    PatrolMap.siteGroup=L.layerGroup().addTo(PatrolMap.map);
+    PatrolMap.renderSiteMarkers();
+    PatrolMap.initialized=true
+  },
+  loadAndRender:async function(){
+    var allPatrols=await LocalDB.getAll('patrols');
+    var today=new Date().toISOString().split('T')[0];
+    var todayPatrols=allPatrols.filter(function(p){return p.start_time&&p.start_time.startsWith(today)});
+    var allPoints=[],tracksByPatrol={};
+    for(var i=0;i<todayPatrols.length;i++){
+      var pid=todayPatrols[i].id;
+      var pts=await LocalDB.getAllByIndex('tracks','patrol_id',pid);
+      pts.sort(function(a,b){return a.recorded_at<b.recorded_at?-1:1});
+      tracksByPatrol[pid]=pts;
+      allPoints=allPoints.concat(pts)
+    }
+    PatrolMap.trailGroup.clearLayers();
+    PatrolMap.gapGroup.clearLayers();
+    if(PatrolMap.heatLayer){PatrolMap.map.removeLayer(PatrolMap.heatLayer);PatrolMap.heatLayer=null}
+    PatrolMap.renderTrails(todayPatrols,tracksByPatrol);
+    var allGaps=[];
+    for(var j=0;j<todayPatrols.length;j++){
+      var gaps=PatrolMap.detectGaps(tracksByPatrol[todayPatrols[j].id]);
+      allGaps=allGaps.concat(gaps);
+      PatrolMap.renderGaps(gaps)
+    }
+    PatrolMap.renderGapChips(allGaps);
+    PatrolMap.renderStats(todayPatrols,allPoints);
+    if(PatrolMap.heatOn&&allPoints.length>0)PatrolMap.renderHeatmap(allPoints);
+    if(allPoints.length>0){
+      var latlngs=allPoints.map(function(p){return[p.lat,p.lng]});
+      PatrolMap.map.fitBounds(L.latLngBounds(latlngs),{padding:[30,30]})
+    }
+  },
+  renderSiteMarkers:function(){
+    PatrolMap.siteGroup.clearLayers();
+    var keys=Object.keys(PatrolMap.SITES);
+    for(var i=0;i<keys.length;i++){
+      var s=PatrolMap.SITES[keys[i]];
+      var icon=L.divIcon({className:'',html:'<div class="map-site-pin'+(keys[i]===activeSite?' map-site-pin--active':'')+'"></div>',iconSize:[14,14],iconAnchor:[7,7]});
+      L.marker([s.lat,s.lng],{icon:icon}).bindTooltip(s.name,{permanent:false,direction:'top',className:'map-site-tooltip'}).addTo(PatrolMap.siteGroup)
+    }
+  },
+  renderTrails:function(patrols,tracksByPatrol){
+    var typeColors={land:'#22c55e',sea:'#3b82f6',cultural_site:'#a855f7'};
+    for(var i=0;i<patrols.length;i++){
+      var pts=tracksByPatrol[patrols[i].id];
+      if(!pts||pts.length<2)continue;
+      var latlngs=pts.map(function(p){return[p.lat,p.lng]});
+      var isActive=activePatrol&&activePatrol.id===patrols[i].id;
+      var color=typeColors[patrols[i].patrol_type]||'#22c55e';
+      L.polyline(latlngs,{color:color,weight:isActive?4:2.5,opacity:isActive?0.95:0.45,lineJoin:'round',lineCap:'round'}).addTo(PatrolMap.trailGroup);
+      if(isActive)L.circleMarker(latlngs[latlngs.length-1],{radius:7,color:'#fff',weight:2,fillColor:'#22c55e',fillOpacity:1}).addTo(PatrolMap.trailGroup)
+    }
+  },
+  renderHeatmap:function(points){
+    if(typeof L.heatLayer!=='function')return;
+    var data=points.map(function(p){return[p.lat,p.lng,0.5]});
+    PatrolMap.heatLayer=L.heatLayer(data,{radius:25,blur:20,maxZoom:15,gradient:{0.3:'#C8D9E6',0.6:'#4a9eda',1.0:'#1a5276'}}).addTo(PatrolMap.map)
+  },
+  detectGaps:function(points){
+    var gaps=[];
+    if(!points||points.length<2)return gaps;
+    for(var i=0;i<points.length-1;i++){
+      var a=points[i],b=points[i+1];
+      var deltaMin=(new Date(b.recorded_at).getTime()-new Date(a.recorded_at).getTime())/60000;
+      var distKm=PatrolMap.haversine(a.lat,a.lng,b.lat,b.lng);
+      if(deltaMin>30||distKm>2)gaps.push({lat1:a.lat,lng1:a.lng,lat2:b.lat,lng2:b.lng,deltaMin:Math.round(deltaMin),distKm:distKm.toFixed(1)})
+    }
+    return gaps
+  },
+  renderGaps:function(gaps){
+    for(var i=0;i<gaps.length;i++){
+      var g=gaps[i];
+      L.polyline([[g.lat1,g.lng1],[g.lat2,g.lng2]],{color:'#f59e0b',weight:2.5,opacity:0.85,dashArray:'8 6',lineJoin:'round'}).bindTooltip(g.deltaMin+' min gap \xb7 '+g.distKm+' km',{className:'map-gap-tooltip',direction:'top'}).addTo(PatrolMap.gapGroup)
+    }
+  },
+  renderGapChips:function(gaps){
+    var row=document.getElementById('map-gap-row');
+    if(!row)return;
+    if(gaps.length===0){row.innerHTML='';return}
+    var longest=gaps.reduce(function(max,g){return g.deltaMin>max?g.deltaMin:max},0);
+    row.innerHTML='<span class="map-gap-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>'+gaps.length+' gap'+(gaps.length>1?'s':'')+' detected</span><span class="map-gap-chip">Longest: '+longest+' min</span>'
+  },
+  renderStats:function(patrols,points){
+    var row=document.getElementById('map-stats-row');
+    if(!row)return;
+    var distKm=0;
+    for(var i=0;i<points.length-1;i++)distKm+=PatrolMap.haversine(points[i].lat,points[i].lng,points[i+1].lat,points[i+1].lng);
+    row.innerHTML='<span class="map-stat-chip">'+patrols.length+' patrol'+(patrols.length!==1?'s':'')+' today</span><span class="map-stat-chip">'+distKm.toFixed(1)+' km covered</span><span class="map-stat-chip">'+points.length+' track pts</span>'
+  },
+  toggleHeatmap:function(){
+    PatrolMap.heatOn=!PatrolMap.heatOn;
+    var btn=document.getElementById('map-heat-btn');
+    if(btn)btn.classList.toggle('map-ctrl-btn--on',PatrolMap.heatOn);
+    if(PatrolMap.heatOn){
+      LocalDB.getAll('patrols').then(function(allPatrols){
+        var today=new Date().toISOString().split('T')[0];
+        var ids=allPatrols.filter(function(p){return p.start_time.startsWith(today)}).map(function(p){return p.id});
+        Promise.all(ids.map(function(pid){return LocalDB.getAllByIndex('tracks','patrol_id',pid)})).then(function(results){
+          var pts=[].concat.apply([],results);
+          if(pts.length>0)PatrolMap.renderHeatmap(pts)
+        })
+      })
+    }else{
+      if(PatrolMap.heatLayer){PatrolMap.map.removeLayer(PatrolMap.heatLayer);PatrolMap.heatLayer=null}
+    }
+  },
+  locateUser:function(){
+    if(!navigator.geolocation){Toast.show('GPS unavailable','warning');return}
+    navigator.geolocation.getCurrentPosition(function(p){
+      PatrolMap.map.setView([p.coords.latitude,p.coords.longitude],14);
+      L.circleMarker([p.coords.latitude,p.coords.longitude],{radius:8,color:'#fff',weight:2,fillColor:'#22c55e',fillOpacity:1}).addTo(PatrolMap.map).bindPopup('You are here').openPopup()
+    },function(){Toast.show('Could not get location','warning')})
+  },
+  haversine:function(lat1,lng1,lat2,lng2){
+    var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+  }
 };
 
 /* ══ SAFETY ══ */

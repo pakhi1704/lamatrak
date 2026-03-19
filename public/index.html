@@ -8,6 +8,9 @@
   <title>LamaTrak</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 </head>
 <body>
 <div id="app">
@@ -344,7 +347,33 @@
   </div>
 
   <!-- Placeholder screens -->
-  <div id="screen-map" class="screen"><header class="dash-header"><button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button></header><main class="dash-scroll"><div class="dash-section"><div class="feed-empty"><p>Full patrol map — next build</p></div></div></main></div>
+  <div id="screen-map" class="screen">
+    <header class="map-screen-hdr">
+      <button class="back-pill" onclick="Nav.go('dashboard')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back
+      </button>
+      <span class="map-screen-title">Patrol Map</span>
+      <div class="map-hdr-actions">
+        <button id="map-heat-btn" class="map-ctrl-btn" onclick="PatrolMap.toggleHeatmap()" title="Toggle heatmap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6v6l4 2"/></svg>
+        </button>
+        <button class="map-ctrl-btn" onclick="PatrolMap.locateUser()" title="My location">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9"/></svg>
+        </button>
+      </div>
+    </header>
+    <div id="patrol-map" class="patrol-map-wrap"></div>
+    <div class="map-bottom-panel">
+      <div id="map-stats-row" class="map-stats-row"></div>
+      <div id="map-gap-row" class="map-gap-row"></div>
+      <div class="map-legend-row">
+        <span class="ml-item"><span class="ml-dot ml-active"></span>Active</span>
+        <span class="ml-item"><span class="ml-dot ml-today"></span>Today</span>
+        <span class="ml-item"><span class="ml-dot ml-gap"></span>Gap</span>
+        <span class="ml-item"><span class="ml-dot ml-site"></span>Site</span>
+      </div>
+    </div>
+  </div>
   
     <div id="screen-record" class="screen">
     <header class="dash-header">
