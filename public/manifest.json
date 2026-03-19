@@ -1,0 +1,10 @@
+{
+  "name": "LamaTrak",
+  "short_name": "LamaTrak",
+  "description": "Offline-first patrol and monitoring system for Lama Lama Rangers",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a2e3a",
+  "theme_color": "#1a2e3a"
+}

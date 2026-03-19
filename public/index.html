@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0f1e28" />
+  <title>LamaTrak</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ====== LOGIN ====== -->
+  <div id="screen-login" class="screen active">
+    <div class="login-bg">
+      <div class="login-glow"></div>
+      <div class="login-content">
+        <div class="login-logo">
+          <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="30" stroke="#C8D9E6" stroke-width="1.5" opacity="0.3"/>
+            <path d="M32 14C29 22,21 26,19 32C17 38,22 46,32 50C42 46,47 38,45 32C43 26,35 22,32 14Z" fill="#C8D9E6" opacity="0.4"/>
+            <path d="M32 20C30 26,26 28,24 32C22 36,26 42,32 44C38 42,42 36,40 32C38 28,34 26,32 20Z" fill="#C8D9E6"/>
+          </svg>
+        </div>
+        <h1 class="login-title">LamaTrak</h1>
+        <p class="login-sub">Lama Lama Ranger Patrol System</p>
+        <div class="login-form">
+          <div class="login-field">
+            <label>Ranger</label>
+            <select id="login-user" class="login-select"></select>
+          </div>
+          <div class="login-field">
+            <label>Base Station</label>
+            <select id="login-site" class="login-select">
+              <option value="port_stewart">Port Stewart (HQ)</option>
+              <option value="silver_plains">Silver Plains</option>
+              <option value="lilyvale">Lilyvale</option>
+              <option value="marina_plains">Marina Plains</option>
+            </select>
+          </div>
+          <button class="login-btn" onclick="App.login()">
+            <span>Start Patrol Day</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div class="login-status">
+          <span class="status-dot" id="login-dot"></span>
+          <span id="login-status-text">Checking connection...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== DASHBOARD ====== -->
+  <div id="screen-dashboard" class="screen">
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-greeting" id="dash-greeting">Good morning</div>
+        <div class="dash-ranger" id="dash-ranger">Ranger</div>
+      </div>
+      <div class="dash-header-right">
+        <div class="dash-site-pill" id="dash-site">Port Stewart</div>
+        <button class="dash-sync-btn" onclick="SyncEngine.manualSync()">
+          <span class="status-dot" id="sync-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div id="alert-banner" class="alert-banner" style="display:none;">
+      <div class="alert-icon" id="alert-icon"></div>
+      <div class="alert-text" id="alert-text"></div>
+      <button class="alert-close" onclick="document.getElementById('alert-banner').style.display='none'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <main class="dash-scroll">
+
+      <!-- SAFETY BRIEFING -->
+      <div class="dash-section safety-brief">
+        <div class="safety-brief-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Pre-Patrol Safety</span>
+          <div class="safety-verdict" id="safety-verdict">SAFE</div>
+        </div>
+        <!-- Threat Radar -->
+        <div class="radar-wrap">
+          <svg class="radar-svg" viewBox="0 0 200 200" id="radar-svg">
+            <polygon class="radar-grid" points="100,20 180,100 100,180 20,100" />
+            <polygon class="radar-grid inner" points="100,45 155,100 100,155 45,100" />
+            <polygon class="radar-grid inner2" points="100,70 130,100 100,130 70,100" />
+            <polygon class="radar-shape" id="radar-shape" points="100,40 160,100 100,160 40,100" />
+            <circle cx="100" cy="20" r="3" class="radar-dot" id="rdot-uv"/>
+            <circle cx="180" cy="100" r="3" class="radar-dot" id="rdot-temp"/>
+            <circle cx="100" cy="180" r="3" class="radar-dot" id="rdot-flood"/>
+            <circle cx="20" cy="100" r="3" class="radar-dot" id="rdot-wind"/>
+            <text x="100" y="12" class="radar-label" text-anchor="middle">UV</text>
+            <text x="195" y="104" class="radar-label" text-anchor="start">TEMP</text>
+            <text x="100" y="198" class="radar-label" text-anchor="middle">FLOOD</text>
+            <text x="5" y="104" class="radar-label" text-anchor="start">WIND</text>
+          </svg>
+          <div class="radar-values">
+            <div class="rv-item"><span class="rv-val" id="rv-uv">--</span><span class="rv-lbl">UV Index</span></div>
+            <div class="rv-item"><span class="rv-val" id="rv-temp">--</span><span class="rv-lbl">Temp</span></div>
+            <div class="rv-item"><span class="rv-val" id="rv-wind">--</span><span class="rv-lbl">Wind</span></div>
+            <div class="rv-item"><span class="rv-val" id="rv-flood">--</span><span class="rv-lbl">Flood</span></div>
+          </div>
+        </div>
+        <div class="safety-recommendation" id="safety-rec">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4m-8-10H0m24 0h-4"/></svg>
+          <span id="safety-rec-text">Calculating...</span>
+        </div>
+      </div>
+
+      <!-- START PATROL -->
+      <div class="dash-section">
+        <div class="section-label">Start Patrol</div>
+        <div class="patrol-cards">
+          <button class="patrol-start-card land" onclick="Patrol.startNew('land')">
+            <div class="psc-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 20l4-8 5 4 5-10 4 6"/><path d="M3 20h18"/></svg></div>
+            <div class="psc-info"><div class="psc-title">Land Patrol</div><div class="psc-sub">Weeds, ferals, fire mgmt</div></div>
+            <svg class="psc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          <button class="patrol-start-card sea" onclick="Patrol.startNew('sea')">
+            <div class="psc-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 17c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 7c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></div>
+            <div class="psc-info"><div class="psc-title">Sea Patrol</div><div class="psc-sub">TUMRA, dolphins, turtles, dugong</div></div>
+            <svg class="psc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          <button class="patrol-start-card cultural" onclick="Patrol.startNew('cultural_site')">
+            <div class="psc-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="4 3"/></svg></div>
+            <div class="psc-info"><div class="psc-title">Cultural Site</div><div class="psc-sub">23 sacred site inspections</div></div>
+            <svg class="psc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ACTIVE PATROL -->
+      <div id="active-patrol-card" class="dash-section active-patrol" style="display:none;">
+        <div class="ap-header">
+          <div class="ap-pulse"></div>
+          <span class="ap-live">LIVE PATROL</span>
+          <span class="ap-type" id="ap-type">Land</span>
+        </div>
+        <div class="ap-stats">
+          <div class="ap-stat"><div class="ap-stat-val" id="ap-time">00:00</div><div class="ap-stat-lbl">Duration</div></div>
+          <div class="ap-stat"><div class="ap-stat-val" id="ap-dist">0</div><div class="ap-stat-lbl">km</div></div>
+          <div class="ap-stat"><div class="ap-stat-val" id="ap-obs">0</div><div class="ap-stat-lbl">Obs</div></div>
+          <div class="ap-stat"><div class="ap-stat-val" id="ap-checkin">90:00</div><div class="ap-stat-lbl">Check-in</div></div>
+        </div>
+        <div class="ap-actions-grid">
+          <button class="ap-btn record" onclick="Nav.go('record')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg>
+            Record
+          </button>
+          <button class="ap-btn safe" onclick="Safety.checkIn()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            I'm Safe
+          </button>
+          <button class="ap-btn help" onclick="Safety.needHelp()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M12 2a10 10 0 110 20 10 10 0 010-20z"/></svg>
+            Need Help
+          </button>
+          <button class="ap-btn sos" onclick="Safety.sos()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            SOS
+          </button>
+        </div>
+        <button class="ap-end" id="end-patrol-btn" onclick="Patrol.handleEnd()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          <span id="end-patrol-text">End Patrol</span>
+        </button>
+      </div>
+            <!-- INTERACTIVE MAP -->
+      <div class="dash-section">
+        <div class="section-label">Country Overview</div>
+        <div class="country-map-card">
+          <svg class="country-map" viewBox="0 0 360 320" id="country-map">
+            <!-- Coastline shape (simplified Cape York east coast) -->
+            <path class="map-coast" d="M60,30 C80,25 120,20 160,30 C200,40 240,35 280,50 C310,60 330,90 320,120 C310,150 300,170 310,200 C320,230 300,260 270,280 C240,300 200,310 160,300 C120,290 80,270 60,240 C40,210 30,170 40,140 C50,110 45,80 50,60 C55,40 60,30 60,30Z" />
+            <path class="map-coast-fill" d="M60,30 C80,25 120,20 160,30 C200,40 240,35 280,50 C310,60 330,90 320,120 C310,150 300,170 310,200 C320,230 300,260 270,280 C240,300 200,310 160,300 C120,290 80,270 60,240 C40,210 30,170 40,140 C50,110 45,80 50,60 C55,40 60,30 60,30Z" />
+            <!-- Water -->
+            <rect class="map-water" x="0" y="0" width="360" height="320" />
+            <!-- Route lines -->
+            <line class="map-route" x1="200" y1="80" x2="120" y2="160" />
+            <line class="map-route" x1="120" y1="160" x2="90" y2="250" />
+            <line class="map-route" x1="120" y1="160" x2="260" y2="200" />
+            <!-- Site markers -->
+            <g class="map-site" id="site-port_stewart" onclick="App.showSiteInfo('port_stewart')" style="cursor:pointer">
+              <circle class="site-ring" cx="200" cy="80" r="14" />
+              <circle class="site-pulse" cx="200" cy="80" r="14" />
+              <circle class="site-dot" cx="200" cy="80" r="6" />
+              <text class="site-name" x="200" y="65">Port Stewart (HQ)</text>
+            </g>
+            <g class="map-site" id="site-silver_plains" onclick="App.showSiteInfo('silver_plains')" style="cursor:pointer">
+              <circle class="site-ring" cx="120" cy="160" r="14" />
+              <circle class="site-pulse" cx="120" cy="160" r="14" />
+              <circle class="site-dot" cx="120" cy="160" r="6" />
+              <text class="site-name" x="120" y="145">Silver Plains</text>
+            </g>
+            <g class="map-site" id="site-lilyvale" onclick="App.showSiteInfo('lilyvale')" style="cursor:pointer">
+              <circle class="site-ring" cx="90" cy="250" r="14" />
+              <circle class="site-pulse" cx="90" cy="250" r="14" />
+              <circle class="site-dot" cx="90" cy="250" r="6" />
+              <text class="site-name" x="90" y="235">Lilyvale</text>
+            </g>
+            <g class="map-site" id="site-marina_plains" onclick="App.showSiteInfo('marina_plains')" style="cursor:pointer">
+              <circle class="site-ring" cx="260" cy="200" r="14" />
+              <circle class="site-pulse" cx="260" cy="200" r="14" />
+              <circle class="site-dot" cx="260" cy="200" r="6" />
+              <text class="site-name" x="260" y="185">Marina Plains</text>
+            </g>
+            <!-- Sea label -->
+            <text class="map-sea-label" x="300" y="40">Princess Charlotte Bay</text>
+            <text class="map-sea-label" x="40" y="290">Cape York Peninsula</text>
+          </svg>
+          <!-- Site Info Popup -->
+          <div class="site-info-popup" id="site-info-popup" style="display:none;">
+            <div class="sip-header">
+              <span class="sip-name" id="sip-name">Port Stewart</span>
+              <span class="sip-status" id="sip-status">Active</span>
+            </div>
+            <div class="sip-stats">
+              <div class="sip-stat"><span class="sip-val" id="sip-patrols">0</span><span class="sip-lbl">Patrols</span></div>
+              <div class="sip-stat"><span class="sip-val" id="sip-obs">0</span><span class="sip-lbl">Observations</span></div>
+              <div class="sip-stat"><span class="sip-val" id="sip-last">--</span><span class="sip-lbl">Last Visit</span></div>
+            </div>
+            <button class="sip-close" onclick="document.getElementById('site-info-popup').style.display='none'">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPECIES BREAKDOWN -->
+      <div class="dash-section">
+        <div class="section-label">Today's Species Breakdown</div>
+        <div class="species-rings">
+          <div class="species-ring-item">
+            <svg class="sp-ring" viewBox="0 0 80 80">
+              <circle class="sp-ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="sp-ring-fill weed-fill" id="sp-weed" cx="40" cy="40" r="32"/>
+            </svg>
+            <div class="sp-ring-center" id="sp-weed-num">0</div>
+            <div class="sp-ring-label">Weeds</div>
+          </div>
+          <div class="species-ring-item">
+            <svg class="sp-ring" viewBox="0 0 80 80">
+              <circle class="sp-ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="sp-ring-fill feral-fill" id="sp-feral" cx="40" cy="40" r="32"/>
+            </svg>
+            <div class="sp-ring-center" id="sp-feral-num">0</div>
+            <div class="sp-ring-label">Ferals</div>
+          </div>
+          <div class="species-ring-item">
+            <svg class="sp-ring" viewBox="0 0 80 80">
+              <circle class="sp-ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="sp-ring-fill marine-fill" id="sp-marine" cx="40" cy="40" r="32"/>
+            </svg>
+            <div class="sp-ring-center" id="sp-marine-num">0</div>
+            <div class="sp-ring-label">Marine</div>
+          </div>
+          <div class="species-ring-item">
+            <svg class="sp-ring" viewBox="0 0 80 80">
+              <circle class="sp-ring-bg" cx="40" cy="40" r="32"/>
+              <circle class="sp-ring-fill water-fill" id="sp-water" cx="40" cy="40" r="32"/>
+            </svg>
+            <div class="sp-ring-center" id="sp-water-num">0</div>
+            <div class="sp-ring-label">Water</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COVERAGE -->
+      <div class="dash-section">
+        <div class="section-label">Monthly Coverage</div>
+        <div class="coverage-hero">
+          <div class="coverage-ring-wrap">
+            <svg class="cov-ring" viewBox="0 0 120 120">
+              <circle class="cov-ring-bg" cx="60" cy="60" r="50"/>
+              <circle class="cov-ring-fill" id="cov-fill" cx="60" cy="60" r="50"/>
+            </svg>
+            <div class="cov-center"><div class="cov-num" id="cov-num">0</div><div class="cov-pct">%</div></div>
+          </div>
+          <div class="coverage-breakdown">
+            <div class="cov-row"><span class="cov-dot land"></span><span class="cov-label">Land</span><span class="cov-val" id="cov-land">0</span></div>
+            <div class="cov-row"><span class="cov-dot sea"></span><span class="cov-label">Sea</span><span class="cov-val" id="cov-sea">0</span></div>
+            <div class="cov-row"><span class="cov-dot cultural"></span><span class="cov-label">Cultural</span><span class="cov-val" id="cov-cultural">0</span></div>
+            <div class="cov-row"><span class="cov-dot obs"></span><span class="cov-label">Observations</span><span class="cov-val" id="cov-obs">0</span></div>
+            <div class="cov-row"><span class="cov-dot sync"></span><span class="cov-label">Unsynced</span><span class="cov-val" id="cov-unsync">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATROL TIMELINE -->
+      <div class="dash-section">
+        <div class="section-label">Today's Patrol Timeline</div>
+        <div class="timeline-bar" id="timeline-bar">
+          <div class="tl-hours">
+            <span>6am</span><span>8</span><span>10</span><span>12pm</span><span>2</span><span>4</span><span>6pm</span>
+          </div>
+          <div class="tl-track" id="tl-track"></div>
+        </div>
+      </div>
+
+      <!-- SYNC -->
+      <div class="dash-section">
+        <div class="section-label">Data Sync</div>
+        <div class="sync-card">
+          <div class="sync-card-row"><span>Local records</span><strong id="sync-local">0</strong></div>
+          <div class="sync-card-row"><span>Waiting to upload</span><strong id="sync-waiting" class="warning">0</strong></div>
+          <div class="sync-card-row"><span>Last sync</span><strong id="sync-last">Never</strong></div>
+          <button class="sync-push-btn" onclick="SyncEngine.manualSync()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5m-7 7l7-7 7 7"/></svg>
+            Push Data Now
+          </button>
+        </div>
+      </div>
+
+      <div style="height: 24px;"></div>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-tab active" onclick="Nav.go('dashboard')" data-screen="dashboard">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        <span>Home</span><div class="nav-line"></div>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('map')" data-screen="map">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+        <span>Map</span><div class="nav-line"></div>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('record')" data-screen="record">
+        <div class="nav-record-ring"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg></div>
+        <span>Record</span>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('safety')" data-screen="safety">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Safety</span><div class="nav-line"></div>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('more')" data-screen="more">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span>More</span><div class="nav-line"></div>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Placeholder screens -->
+  <div id="screen-map" class="screen"><header class="dash-header"><button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button></header><main class="dash-scroll"><div class="dash-section"><div class="feed-empty"><p>Full patrol map — next build</p></div></div></main></div>
+  
+    <div id="screen-record" class="screen">
+    <header class="dash-header">
+      <button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+      <div class="dash-header-left"><div class="dash-ranger">Record</div></div>
+    </header>
+    <main class="dash-scroll">
+
+      <!-- No active patrol warning -->
+      <div id="record-no-patrol" class="record-warning" style="display:none;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>
+          <div class="record-warning-title">No active patrol</div>
+          <div class="record-warning-sub">Start a patrol first to record observations</div>
+        </div>
+        <button class="record-warning-btn" onclick="Nav.go('dashboard')">Go Back</button>
+      </div>
+
+      <!-- Type Selector -->
+      <div id="record-type-picker" class="type-picker">
+        <div class="section-label">What did you find?</div>
+        <div class="type-grid-big">
+          <button class="type-card" data-type="weed" onclick="RecordForm.pickType('weed')">
+            <div class="type-card-icon land-bg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22V2"/><path d="M5 12c2-4 5-5 7-5s5 1 7 5"/><path d="M7 8c2-2 4-3 5-3s3 1 5 3"/></svg></div>
+            <span class="type-card-label">Weed</span>
+          </button>
+          <button class="type-card" data-type="feral_animal" onclick="RecordForm.pickType('feral_animal')">
+            <div class="type-card-icon danger-bg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="5"/><path d="M7 14v5m10-5v5"/><path d="M9 7h.01M15 7h.01"/></svg></div>
+            <span class="type-card-label">Feral Animal</span>
+          </button>
+          <button class="type-card" data-type="marine" onclick="RecordForm.pickType('marine')">
+            <div class="type-card-icon sea-bg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 17c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></div>
+            <span class="type-card-label">Marine</span>
+          </button>
+          <button class="type-card" data-type="water_quality" onclick="RecordForm.pickType('water_quality')">
+            <div class="type-card-icon cultural-bg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l-5 9c-1.3 2.5 0 5.5 2.5 6.5s5.5 0 6.5-2.5c1-2.5 0-5-1-6.5L12 2z"/></svg></div>
+            <span class="type-card-label">Water Quality</span>
+          </button>
+          <button class="type-card" data-type="cultural_site" onclick="RecordForm.pickType('cultural_site')">
+            <div class="type-card-icon warning-bg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="4 3"/></svg></div>
+            <span class="type-card-label">Cultural Site</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- FORM AREA (hidden until type selected) -->
+      <div id="record-form-area" style="display:none;">
+        <button class="change-type-btn" onclick="RecordForm.backToTypes()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          <span id="selected-type-label">Weed</span> — tap to change
+        </button>
+
+        <!-- Weed Form -->
+        <div id="form-weed" class="obs-form-card" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Species</label>
+            <input type="text" id="f-weed-species" class="form-input" placeholder="Search species..." list="weed-list" />
+            <datalist id="weed-list"></datalist>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label class="form-label">Density</label>
+              <select id="f-weed-density" class="form-select">
+                <option value="scattered">Scattered</option>
+                <option value="moderate">Moderate</option>
+                <option value="dense">Dense</option>
+                <option value="very_dense">Very Dense</option>
+              </select>
+            </div>
+            <div class="form-group half">
+              <label class="form-label">Spread (m)</label>
+              <input type="number" id="f-weed-radius" class="form-input" placeholder="0" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Feral Animal Form -->
+        <div id="form-feral_animal" class="obs-form-card" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Species</label>
+            <div class="chip-group" id="feral-chips">
+              <button class="chip active" data-val="pig" onclick="RecordForm.selectChip(this,'feral-chips')">Wild Pig</button>
+              <button class="chip" data-val="cattle" onclick="RecordForm.selectChip(this,'feral-chips')">Wild Cattle</button>
+              <button class="chip" data-val="dog" onclick="RecordForm.selectChip(this,'feral-chips')">Wild Dog</button>
+              <button class="chip" data-val="cane_toad" onclick="RecordForm.selectChip(this,'feral-chips')">Cane Toad</button>
+              <button class="chip" data-val="other" onclick="RecordForm.selectChip(this,'feral-chips')">Other</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label class="form-label">Count</label>
+              <div class="counter-wrap">
+                <button class="counter-btn" onclick="RecordForm.adjustCount('f-feral-count',-1)">-</button>
+                <input type="number" id="f-feral-count" class="counter-input" value="1" />
+                <button class="counter-btn" onclick="RecordForm.adjustCount('f-feral-count',1)">+</button>
+              </div>
+            </div>
+            <div class="form-group half">
+              <label class="form-label">Behaviour</label>
+              <select id="f-feral-behaviour" class="form-select">
+                <option value="grazing">Grazing</option>
+                <option value="moving">Moving</option>
+                <option value="resting">Resting</option>
+                <option value="tracks_only">Tracks Only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Marine Form -->
+        <div id="form-marine" class="obs-form-card" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Species</label>
+            <div class="chip-group" id="marine-chips">
+              <button class="chip active" data-val="snubfin_dolphin" onclick="RecordForm.selectChip(this,'marine-chips')">Snubfin Dolphin</button>
+              <button class="chip" data-val="bottlenose_dolphin" onclick="RecordForm.selectChip(this,'marine-chips')">Bottlenose</button>
+              <button class="chip" data-val="humpback_dolphin" onclick="RecordForm.selectChip(this,'marine-chips')">Humpback</button>
+              <button class="chip" data-val="dugong" onclick="RecordForm.selectChip(this,'marine-chips')">Dugong</button>
+              <button class="chip" data-val="turtle_green" onclick="RecordForm.selectChip(this,'marine-chips')">Green Turtle</button>
+              <button class="chip" data-val="turtle_hawksbill" onclick="RecordForm.selectChip(this,'marine-chips')">Hawksbill</button>
+              <button class="chip" data-val="turtle_flatback" onclick="RecordForm.selectChip(this,'marine-chips')">Flatback</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label class="form-label">Count</label>
+              <div class="counter-wrap">
+                <button class="counter-btn" onclick="RecordForm.adjustCount('f-marine-count',-1)">-</button>
+                <input type="number" id="f-marine-count" class="counter-input" value="1" />
+                <button class="counter-btn" onclick="RecordForm.adjustCount('f-marine-count',1)">+</button>
+              </div>
+            </div>
+            <div class="form-group half">
+              <label class="form-label">Activity</label>
+              <select id="f-marine-activity" class="form-select">
+                <option value="feeding">Feeding</option>
+                <option value="travelling">Travelling</option>
+                <option value="resting">Resting</option>
+                <option value="nesting">Nesting</option>
+                <option value="stranded">Stranded</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">TUMRA Area</label>
+            <div class="chip-group" id="tumra-chips">
+              <button class="chip active" data-val="yes" onclick="RecordForm.selectChip(this,'tumra-chips')">Within TUMRA</button>
+              <button class="chip" data-val="no" onclick="RecordForm.selectChip(this,'tumra-chips')">Outside</button>
+              <button class="chip" data-val="unknown" onclick="RecordForm.selectChip(this,'tumra-chips')">Unknown</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Water Quality Form -->
+        <div id="form-water_quality" class="obs-form-card" style="display:none;">
+          <div class="form-row">
+            <div class="form-group half">
+              <label class="form-label">pH</label>
+              <input type="number" id="f-wq-ph" class="form-input" step="0.1" placeholder="7.0" />
+            </div>
+            <div class="form-group half">
+              <label class="form-label">Turbidity (NTU)</label>
+              <input type="number" id="f-wq-turbidity" class="form-input" step="0.1" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label class="form-label">Temp (C)</label>
+              <input type="number" id="f-wq-temp" class="form-input" step="0.1" placeholder="28" />
+            </div>
+            <div class="form-group half">
+              <label class="form-label">Dissolved O2 (mg/L)</label>
+              <input type="number" id="f-wq-do" class="form-input" step="0.1" placeholder="6.5" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Visual</label>
+            <div class="chip-group" id="wq-chips">
+              <button class="chip active" data-val="clear" onclick="RecordForm.selectChip(this,'wq-chips')">Clear</button>
+              <button class="chip" data-val="slightly_turbid" onclick="RecordForm.selectChip(this,'wq-chips')">Slightly Turbid</button>
+              <button class="chip" data-val="turbid" onclick="RecordForm.selectChip(this,'wq-chips')">Turbid</button>
+              <button class="chip" data-val="algal_bloom" onclick="RecordForm.selectChip(this,'wq-chips')">Algal Bloom</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cultural Site Form -->
+        <div id="form-cultural_site" class="obs-form-card" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Condition</label>
+            <div class="chip-group" id="cs-condition-chips">
+              <button class="chip active" data-val="stable" onclick="RecordForm.selectChip(this,'cs-condition-chips')">Stable</button>
+              <button class="chip" data-val="degraded" onclick="RecordForm.selectChip(this,'cs-condition-chips')">Degraded</button>
+              <button class="chip" data-val="damaged" onclick="RecordForm.selectChip(this,'cs-condition-chips')">Damaged</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Access</label>
+            <div class="chip-group" id="cs-access-chips">
+              <button class="chip active" data-val="accessible" onclick="RecordForm.selectChip(this,'cs-access-chips')">Accessible</button>
+              <button class="chip" data-val="restricted_access" onclick="RecordForm.selectChip(this,'cs-access-chips')">Restricted</button>
+              <button class="chip" data-val="inaccessible" onclick="RecordForm.selectChip(this,'cs-access-chips')">Inaccessible</button>
+            </div>
+          </div>
+          <div class="restricted-toggle">
+            <label><input type="checkbox" id="f-cs-restricted" /> <span>Restricted data (Elder-only visibility)</span></label>
+          </div>
+        </div>
+
+        <!-- Common: Photo + Notes + GPS + Save -->
+        <div class="common-fields">
+          <div class="form-group">
+            <label class="form-label">Photo</label>
+            <div class="photo-area">
+              <input type="file" id="f-photo" accept="image/*" capture="environment" class="photo-file-input" onchange="RecordForm.previewPhoto(this)" />
+              <label for="f-photo" class="photo-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Take Photo</span>
+              </label>
+              <div id="photo-preview-area"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes (optional)</label>
+            <textarea id="f-notes" class="form-textarea" placeholder="Quick notes..." rows="2"></textarea>
+          </div>
+          <div class="gps-bar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m-8-10H0m24 0h-4"/></svg>
+            <span id="record-gps">Acquiring GPS...</span>
+          </div>
+          <button class="save-obs-btn" onclick="RecordForm.save()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            Save Observation
+          </button>
+          <div id="save-success" class="save-success" style="display:none;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+            <span>Saved! Ready for next observation.</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+  
+  <div id="screen-safety" class="screen"><header class="dash-header"><button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button></header><main class="dash-scroll"><div class="dash-section"><div class="feed-empty"><p>Safety centre — next build</p></div></div></main></div>
+    <div id="screen-more" class="screen">
+    <header class="dash-header">
+      <button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+      <div class="dash-header-left"><div class="dash-ranger">Settings</div></div>
+    </header>
+    <main class="dash-scroll">
+      <div class="dash-section">
+        <div class="section-label">Account</div>
+        <div class="settings-card">
+          <div class="settings-row"><span class="settings-label">Ranger</span><span class="settings-val" id="set-ranger">--</span></div>
+          <div class="settings-row"><span class="settings-label">Role</span><span class="settings-val" id="set-role">--</span></div>
+          <div class="settings-row"><span class="settings-label">Active Site</span><span class="settings-val" id="set-site">--</span></div>
+        </div>
+        <button class="more-btn" onclick="App.logout()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/></svg>
+          Switch Ranger / Log Out
+        </button>
+      </div>
+      <div class="dash-section">
+        <div class="section-label">About</div>
+        <div class="settings-card">
+          <div class="settings-row"><span class="settings-label">App</span><span class="settings-val">LamaTrak v1.0</span></div>
+          <div class="settings-row"><span class="settings-label">Build</span><span class="settings-val">EWB 2026 - DA 4.1</span></div>
+          <div class="settings-row"><span class="settings-label">Team</span><span class="settings-val">Tut 01, Team 2</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/db.js"></script>
+<script src="/sync.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
