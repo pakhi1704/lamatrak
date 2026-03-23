@@ -355,6 +355,7 @@ var Nav={go:function(screen){
     if(currentUser){document.getElementById('set-ranger').textContent=currentUser.name;document.getElementById('set-role').textContent=currentUser.role.replace('_',' ');document.getElementById('set-site').textContent=SITES[activeSite]||activeSite}
   }
   if(screen==='map'){PatrolMap.show()}
+  if(screen==='safety'){SafetyCentre.refresh();setInterval(function(){SafetyCentre.refresh()},1000)}
 }};
 
 /* ══ PATROL ══ */
@@ -773,7 +774,78 @@ var RecordForm={
     document.getElementById('f-notes').value=''
   }
 };
+var SafetyCentre = {
+  refresh: function() {
+    var el = document.getElementById('sc-countdown');
+    var label = document.getElementById('sc-status-label');
+    var pulse = document.getElementById('sc-pulse');
+    if (!activePatrol) {
+      if (el) el.textContent = '--:--';
+      if (label) label.textContent = 'No active patrol';
+      if (pulse) pulse.className = 'sc-pulse inactive';
+    } else {
+      if (label) label.textContent = 'Patrol active — check in regularly';
+      if (pulse) pulse.className = 'sc-pulse active';
+      if (nextCheckinTime && el) {
+        var r = Math.max(0, nextCheckinTime - Date.now());
+        var m = Math.floor(r / 60000);
+        var s = Math.floor((r % 60000) / 1000);
+        el.textContent = m + ':' + String(s).padStart(2, '0');
+        el.style.color = m < 5 ? 'var(--danger)' : m < 15 ? 'var(--warning)' : 'var(--dark)';
+      }
+    }
+    var h = new Date().getHours();
+    var uv = App.simUV(h);
+    var temp = App.simTemp(h);
+    var uvEl = document.getElementById('sc-uv-val');
+    var tempEl = document.getElementById('sc-temp-val');
+    var recEl = document.getElementById('sc-uv-rec');
+    var fillEl = document.getElementById('sc-uv-fill');
+    var waterEl = document.getElementById('sc-water-rec');
+    var maxEl = document.getElementById('sc-max-patrol');
+    if (uvEl) uvEl.textContent = uv;
+    if (tempEl) tempEl.textContent = temp + '°C';
+    if (fillEl) {
+      var pct = Math.min(100, (uv / 14) * 100);
+      fillEl.style.width = pct + '%';
+      fillEl.style.background = uv >= 11 ? 'var(--danger)' : uv >= 8 ? 'var(--warning)' : 'var(--success)';
+    }
+    if (uv >= 11) {
+      if (recEl) recEl.textContent = '⚠️ UV EXTREME — max 2hr patrol, 4L water, full PPE, patrol in pairs';
+      if (waterEl) waterEl.textContent = '4L+';
+      if (maxEl) maxEl.textContent = '2hr';
+    } else if (uv >= 8) {
+      if (recEl) recEl.textContent = 'UV HIGH — breaks every 45min, SPF 50+, stay hydrated';
+      if (waterEl) waterEl.textContent = '3L';
+      if (maxEl) maxEl.textContent = '4hr';
+    } else {
+      if (recEl) recEl.textContent = 'Conditions manageable — standard safety protocols apply';
+      if (waterEl) waterEl.textContent = '2L';
+      if (maxEl) maxEl.textContent = '6hr';
+    }
+    var mins = checkinIntervalMs / 60000;
+    document.querySelectorAll('.sc-interval-btn').forEach(function(b) {
+      b.classList.toggle('active', parseInt(b.dataset.mins) === mins);
+    });
+  },
 
+  setInterval: function(mins) {
+    checkinIntervalMs = mins * 60 * 1000;
+    if (activePatrol) Safety.resetCheckinTimer();
+    SafetyCentre.refresh();
+    Toast.show('Check-in interval set to ' + mins + ' min', 'success');
+  },
+
+  toggleCheck: function(el) {
+    el.classList.toggle('checked');
+    var all = document.querySelectorAll('.sc-check-item');
+    var done = document.querySelectorAll('.sc-check-item.checked').length;
+    var fill = document.getElementById('sc-checklist-fill');
+    var count = document.getElementById('sc-checklist-count');
+    if (fill) fill.style.width = (done / all.length * 100) + '%';
+    if (count) count.textContent = done + '/' + all.length + ' complete';
+  }
+};
 document.addEventListener('DOMContentLoaded',function(){
 App.init();
 var scroll=document.querySelector('.dash-scroll');
