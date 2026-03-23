@@ -113,6 +113,6 @@ Dual-layer offline-first:
 Three roles (set at login, stored in localStorage, no server enforcement yet):
 - **Ranger** — patrol, observations, safety check-ins
 - **Senior Ranger** — all ranger + report access
-- **Elder** — governance view; should see `is_restricted=1` observations (not enforced just yet)
+- **Elder** — governance view; should see `is_restricted=1` observations (not enforced yet)
 
 Seeded users on first start: Karen Liddy (elder), Senior Ranger, Ranger 1, Ranger 2.
