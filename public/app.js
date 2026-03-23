@@ -11,7 +11,13 @@ var App={
     var p=await LocalDB.getAllByIndex('patrols','status','active');
     if(p.length>0)activePatrol=p[0];
     var s=localStorage.getItem('lamatrak_user');
-    if(s){currentUser=JSON.parse(s);activeSite=localStorage.getItem('lamatrak_site')||'port_stewart';App.enterDashboard()}
+    if(s){
+      var savedUser=JSON.parse(s);
+      activeSite=localStorage.getItem('lamatrak_site')||'port_stewart';
+      setTimeout(function(){
+        PinAuth.showPinPad(savedUser.id, savedUser.name, savedUser.role, {});
+      }, 200);
+    }
     App.updateLoginStatus()
   },
 
