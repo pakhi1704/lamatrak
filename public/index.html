@@ -532,6 +532,102 @@
       </div>
     </main>
   </div>
+
+  <!-- ====== REPORTS ====== -->
+<div id="screen-reports" class="screen">
+  <header class="dash-header">
+    <button class="back-pill" onclick="Nav.go('dashboard')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="dash-header-left"><div class="dash-ranger">Reports</div></div>
+  </header>
+  <main class="dash-scroll">
+
+    <!-- Date range -->
+    <div class="dash-section">
+      <div class="section-label">Reporting Period</div>
+      <div class="report-date-row">
+        <div class="form-group half">
+          <label class="form-label">From</label>
+          <input type="date" id="report-from" class="form-input" />
+        </div>
+        <div class="form-group half">
+          <label class="form-label">To</label>
+          <input type="date" id="report-to" class="form-input" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Agency cards -->
+    <div class="dash-section">
+      <div class="section-label">Select Agency</div>
+      <div class="report-cards">
+
+        <div class="report-card">
+          <div class="report-card-top">
+            <span class="agency-badge niaa">NIAA</span>
+            <span class="report-card-title">Monthly Activity Summary</span>
+          </div>
+          <p class="report-card-desc">Patrol logs, ranger hours, invasive species, cultural sites, training register</p>
+          <div class="report-card-actions">
+            <button class="btn-preview" onclick="Reports.preview('niaa')">Preview</button>
+            <button class="btn-export" onclick="Reports.export('niaa')">Export PDF</button>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <div class="report-card-top">
+            <span class="agency-badge gbrmpa">GBRMPA</span>
+            <span class="report-card-title">TUMRA Marine Report</span>
+          </div>
+          <p class="report-card-desc">Marine wildlife sightings, reef health observations, incident register</p>
+          <div class="report-card-actions">
+            <button class="btn-preview" onclick="Reports.preview('gbrmpa')">Preview</button>
+            <button class="btn-export" onclick="Reports.export('gbrmpa')">Export PDF</button>
+          </div>
+        </div>
+
+        <div class="report-card">
+          <div class="report-card-top">
+            <span class="agency-badge qpws">QPWS</span>
+            <span class="report-card-title">Quarterly Patrol Report</span>
+          </div>
+          <p class="report-card-desc">Patrol coverage, species register, invasive species, fire management</p>
+          <div class="report-card-actions">
+            <button class="btn-preview" onclick="Reports.preview('qpws')">Preview</button>
+            <button class="btn-export" onclick="Reports.export('qpws')">Export PDF</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Export all -->
+    <div class="dash-section">
+      <button class="btn-export-all" onclick="Reports.exportAll()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export All Three Reports
+      </button>
+    </div>
+
+    <div style="height:24px"></div>
+  </main>
+
+  <!-- Preview modal -->
+  <div id="report-modal" class="report-modal hidden">
+    <div class="report-modal-inner">
+      <div class="report-modal-header">
+        <span id="report-modal-title">Report Preview</span>
+       <button onclick="Reports.closePreview()" style="background:none;border:none;cursor:pointer;padding:4px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      </div>
+      <div id="report-modal-body" class="report-modal-body"></div>
+      <button class="btn-export" style="width:100%;margin-top:12px" id="report-modal-export-btn">Export This PDF</button>
+    </div>
+  </div>
+</div>
   
   <div id="screen-safety" class="screen"><header class="dash-header"><button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button></header><main class="dash-scroll"><div class="dash-section"><div class="feed-empty"><p>Safety centre — next build</p></div></div></main></div>
     <div id="screen-more" class="screen">
@@ -576,18 +672,21 @@
       <div class="nav-record-ring"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg></div>
       <span>Record</span>
     </button>
-    <button class="nav-tab" onclick="Nav.go('safety')" data-screen="safety">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span>Safety</span><div class="nav-line"></div>
-    </button>
+    <button class="nav-tab" onclick="Nav.go('reports')" data-screen="reports">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+  <span>Reports</span><div class="nav-line"></div>
+</button>
     <button class="nav-tab" onclick="Nav.go('more')" data-screen="more">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       <span>More</span><div class="nav-line"></div>
     </button>
   </nav>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="/db.js"></script>
 <script src="/sync.js"></script>
+<script src="/reports.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
