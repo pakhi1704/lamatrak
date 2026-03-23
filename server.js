@@ -107,7 +107,7 @@ async function startServer() {
     run("INSERT INTO users (id, name, role) VALUES ('u-elder-001', 'Karen Liddy', 'elder')");
     run("INSERT INTO users (id, name, role) VALUES ('u-senior-001', 'Senior Ranger', 'senior_ranger')");
     run("INSERT INTO users (id, name, role) VALUES ('u-ranger-001', 'Ranger 1', 'ranger')");
-    run("INSERT INTO users (id, name, role) VALUES ('u-ranger-002', 'Ranger 2', 'ranger')");
+    run("INSERT INTO users (id, name, role) VALUES ('u-ranger-002', 'Junior Ranger', 'ranger')");
     console.log('Seeded default users');
   }
 
