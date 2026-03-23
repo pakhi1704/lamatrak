@@ -1,4 +1,4 @@
-var currentUser=null,activePatrol=null,activeSite='port_stewart',gpsWatchId=null,trackPointCount=0,patrolTimer=null,checkinTimer=null,checkinIntervalMs=90*60*1000,nextCheckinTime=null,patrolObsCount=0,safetyInterval=null;
+var currentUser=null,activePatrol=null,activeSite='port_stewart',gpsWatchId=null,trackPointCount=0,patrolTimer=null,checkinTimer=null,checkinIntervalMs=90*60*1000,nextCheckinTime=null,patrolObsCount=0,safetyInterval=null,weatherData=null,weatherInterval=null;
 var SITES={port_stewart:'Port Stewart',silver_plains:'Silver Plains',lilyvale:'Lilyvale',marina_plains:'Marina Plains'};
 
 var Toast={el:null,timeout:null,show:function(m,t){t=t||'info';if(!Toast.el){Toast.el=document.createElement('div');Toast.el.className='toast';document.body.appendChild(Toast.el)}clearTimeout(Toast.timeout);Toast.el.textContent=m;Toast.el.className='toast '+t;requestAnimationFrame(function(){Toast.el.classList.add('show')});Toast.timeout=setTimeout(function(){Toast.el.classList.remove('show')},3000)}};
@@ -81,15 +81,25 @@ var App={
     setTimeout(function(){App.checkAlerts()},150);
     if(activePatrol)App.showActivePatrol();else document.getElementById('active-patrol-card').style.display='none';
     if(safetyInterval)clearInterval(safetyInterval);
-    safetyInterval=setInterval(function(){App.updateSafety();App.updateCheckinDisplay()},10000)
+    safetyInterval=setInterval(function(){App.updateSafety();App.updateCheckinDisplay()},10000);
+    App.fetchWeather();
+    if(weatherInterval)clearInterval(weatherInterval);
+    weatherInterval=setInterval(App.fetchWeather,15*60*1000)
   },
 
   /* ── RADAR + SAFETY ── */
   updateSafety:function(){
     var h=new Date().getHours();
-    var uv=App.simUV(h),temp=App.simTemp(h),wind=App.simWind(h);
     var month=new Date().getMonth(),isWet=month>=10||month<=3;
-    var floodVal=isWet?(Math.random()>0.7?85:45):15;
+    var uv,temp,wind,floodVal;
+    if(weatherData){
+      uv=weatherData.uv;temp=weatherData.temp;wind=weatherData.wind;
+      var baseFlood=isWet?20:5;
+      floodVal=Math.min(100,baseFlood+Math.round(weatherData.precip*3.5))
+    }else{
+      uv=App.simUV(h);temp=App.simTemp(h);wind=App.simWind(h);
+      floodVal=isWet?(Math.random()>0.7?85:45):15
+    }
     var floodLabel=floodVal>70?'HIGH':floodVal>35?'MED':'LOW';
 
     // Values
@@ -153,6 +163,26 @@ var App={
   simUV:function(h){if(h<6||h>18)return 0;if(h<8)return Math.round(2+(h-6)*2.5);if(h<11)return Math.round(7+(h-8)*1.5);if(h<=14)return Math.round(11+Math.sin(h)*1.5);if(h<17)return Math.round(11-(h-14)*2.8);return Math.round(3-(h-17)*1.5)},
   simTemp:function(h){if(h<6)return 24;if(h<10)return Math.round(24+(h-6)*2.2);if(h<=15)return Math.round(32+Math.sin(h*0.5)*3);if(h<19)return Math.round(33-(h-15)*2);return 26},
   simWind:function(h){return Math.round(12+Math.sin(h*0.8)*10+Math.random()*5)},
+
+  fetchWeather:async function(){
+    var site=PatrolMap.SITES[activeSite];
+    if(!site)return;
+    var CACHE_KEY='lamatrak_weather_'+activeSite;
+    var MIN_REVALIDATE=5*60*1000;
+    // Step 1: serve stale immediately
+    try{var c1=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(c1&&c1.data)weatherData=c1.data}catch(e){}
+    // Step 2: skip if cache is fresh
+    try{var c2=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(c2&&Date.now()-c2.ts<MIN_REVALIDATE)return}catch(e){}
+    // Step 3: background revalidate
+    try{
+      var url='https://api.open-meteo.com/v1/forecast?latitude='+site.lat+'&longitude='+site.lng+'&current=temperature_2m,wind_speed_10m,uv_index,precipitation';
+      var r=await fetch(url);
+      if(!r.ok)throw new Error('weather');
+      var d=(await r.json()).current;
+      weatherData={temp:Math.round(d.temperature_2m),wind:Math.round(d.wind_speed_10m),uv:Math.round(d.uv_index),precip:d.precipitation};
+      localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:weatherData}))
+    }catch(e){}
+  },
 
   /* ── SPECIES ── */
   updateSpecies:async function(){
