@@ -12,7 +12,8 @@ var PinAuth = {
   selectedUserRole: null,
   enteredPin: '',
   isSettingPin: false,
-  pendingNewPin: '',
+  isChangingPin: false,
+  changePinStep: null, // 'verify-current', 'enter-new', or null  confirmingNewPin: false,  pendingNewPin: '',
   maxAttempts: 5,
   attempts: 0,
   lockoutUntil: null,
@@ -92,6 +93,9 @@ var PinAuth = {
     PinAuth.selectedUserRole = userRole;
     PinAuth.enteredPin = '';
     PinAuth.isSettingPin = false;
+    PinAuth.isChangingPin = false;
+    PinAuth.changePinStep = null;
+    PinAuth.confirmingNewPin = false;
     PinAuth.pendingNewPin = '';
 
     // Check lockout
@@ -110,6 +114,23 @@ var PinAuth = {
     }
   },
 
+  /* Initiate PIN change flow (called from Settings screen) */
+  initiateChangePin: function() {
+    if (!currentUser) {
+      Toast.show('Not logged in', 'warning');
+      return;
+    }
+    PinAuth.selectedUserId = currentUser.id;
+    PinAuth.selectedUserName = currentUser.name;
+    PinAuth.selectedUserRole = currentUser.role;
+    PinAuth.enteredPin = '';
+    PinAuth.isChangingPin = true;
+    PinAuth.changePinStep = 'verify-current';
+    PinAuth.isSettingPin = false;
+    PinAuth.pendingNewPin = '';
+    PinAuth.renderPinScreen('enter-current');
+  },
+
   /* Render the full PIN screen overlay */
   renderPinScreen: function(mode) {
     var existing = document.getElementById('pin-overlay');
@@ -117,15 +138,21 @@ var PinAuth = {
 
     var titles = {
       enter:  'Enter your PIN',
+      'enter-current': 'Verify Current PIN',
       setup:  'Create your PIN',
       confirm:'Confirm your PIN',
+      'new': 'Create New PIN',
+      'confirm-new': 'Confirm New PIN',
       locked: 'Account Locked'
     };
 
     var subtitles = {
       enter:  PinAuth.selectedUserName,
+      'enter-current': 'Enter your current PIN to change it',
       setup:  'First time? Set a 4-digit PIN to secure your account',
       confirm:'Re-enter your PIN to confirm',
+      'new': 'Enter a new 4-digit PIN',
+      'confirm-new': 'Re-enter your new PIN to confirm',
       locked: 'Too many failed attempts'
     };
 
@@ -167,7 +194,7 @@ var PinAuth = {
             '</div>',
 
             /* Back link */
-            '<button class="pin-back-link" onclick="PinAuth.goBack()">← Change ranger</button>',
+            '<button class="pin-back-link" onclick="PinAuth.goBack()">' + (mode === 'enter-current' ? '← Cancel' : '← Change ranger') + '</button>',
           ].join('') : [
             '<div class="pin-lockout-timer" id="pin-lockout-timer">--:--</div>',
             '<div class="pin-lockout-msg">Wait for the timer to unlock your account</div>',
@@ -219,7 +246,54 @@ pressKey: function(key, btn) {
   handleComplete: async function() {
     var userId = PinAuth.selectedUserId;
 
-    /* ── Setting up PIN ── */
+    /* ── PIN CHANGE FLOW ── */
+    
+    /* Step 1: Verify current PIN */
+    if (PinAuth.isChangingPin && PinAuth.changePinStep === 'verify-current') {
+      var ok = await PinAuth.verifyPin(userId, PinAuth.enteredPin);
+      if (!ok) {
+        PinAuth.showError('Wrong PIN');
+        PinAuth.enteredPin = '';
+        setTimeout(function() { PinAuth.updateDots(); }, 100);
+        return;
+      }
+      // Verified! Move to next step
+      PinAuth.changePinStep = 'enter-new';
+      PinAuth.enteredPin = '';
+      PinAuth.confirmingNewPin = false;
+      PinAuth.renderPinScreen('new');
+      return;
+    }
+
+    /* Step 2: Enter new PIN */
+    if (PinAuth.isChangingPin && PinAuth.changePinStep === 'enter-new' && !PinAuth.confirmingNewPin) {
+      PinAuth.pendingNewPin = PinAuth.enteredPin;
+      PinAuth.enteredPin = '';
+      PinAuth.confirmingNewPin = true;
+      PinAuth.renderPinScreen('confirm-new');
+      return;
+    }
+
+    /* Step 3: Confirm new PIN */
+    if (PinAuth.isChangingPin && PinAuth.changePinStep === 'enter-new' && PinAuth.confirmingNewPin) {
+      if (PinAuth.enteredPin !== PinAuth.pendingNewPin) {
+        PinAuth.showError("PINs don't match — try again");
+        PinAuth.pendingNewPin = '';
+        PinAuth.enteredPin = '';
+        PinAuth.confirmingNewPin = false;
+        setTimeout(function() { PinAuth.renderPinScreen('new'); }, 1200);
+        return;
+      }
+      await PinAuth.savePin(userId, PinAuth.enteredPin);
+      PinAuth.showSuccess('PIN changed successfully!');
+      setTimeout(function() { PinAuth.closeOverlay(); }, 800);
+      if (Toast) Toast.show('PIN changed successfully', 'success');
+      return;
+    }
+
+    /* ── INITIAL PIN SETUP FLOW ── */
+    
+    /* Step 1: Set PIN */
     if (PinAuth.isSettingPin && !PinAuth.pendingNewPin) {
       PinAuth.pendingNewPin = PinAuth.enteredPin;
       PinAuth.enteredPin = '';
@@ -227,7 +301,7 @@ pressKey: function(key, btn) {
       return;
     }
 
-    /* ── Confirming new PIN ── */
+    /* Step 2: Confirm PIN */
     if (PinAuth.isSettingPin && PinAuth.pendingNewPin) {
       if (PinAuth.enteredPin !== PinAuth.pendingNewPin) {
         PinAuth.showError("PINs don't match — try again");
@@ -242,7 +316,8 @@ pressKey: function(key, btn) {
       return;
     }
 
-    /* ── Verifying existing PIN ── */
+    /* ── LOGIN FLOW ── */
+    
     if (PinAuth.isLockedOut(userId)) {
       PinAuth.renderPinScreen('locked');
       PinAuth.startLockoutCountdown(userId);
@@ -323,6 +398,14 @@ pressKey: function(key, btn) {
     PinAuth.enteredPin = '';
     PinAuth.pendingNewPin = '';
     PinAuth.isSettingPin = false;
+    PinAuth.isChangingPin = false;
+    PinAuth.changePinStep = null;
+    PinAuth.confirmingNewPin = false;
+    var overlay = document.getElementById('pin-overlay');
+    if (overlay) { overlay.classList.add('pin-overlay--exit'); setTimeout(function() { overlay.remove(); }, 300); }
+  },
+
+  closeOverlay: function() {
     var overlay = document.getElementById('pin-overlay');
     if (overlay) { overlay.classList.add('pin-overlay--exit'); setTimeout(function() { overlay.remove(); }, 300); }
   },

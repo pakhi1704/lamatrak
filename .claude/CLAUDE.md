@@ -82,12 +82,12 @@ Dual-layer offline-first:
 
 | Screen ID | Status |
 |-----------|--------|
-| `screen-login` | Done — user/site selection, no PIN validation yet |
+| `screen-login` | Done — user/site selection + PIN setup/verification |
 | `screen-dashboard` | Done — safety radar (simulated), coverage, species rings, timeline, feed |
 | `screen-map` | Done — Leaflet.js, trails, heatmap, gap detection, 4 base station markers |
 | `screen-record` | Done — 5 observation types with full forms |
 | `screen-safety` | Placeholder only ("next build") |
-| `screen-more` | Done — account info, logout |
+| `screen-more` | Done — account info, change PIN, logout |
 
 ## Key Behaviours to Preserve
 
@@ -98,10 +98,37 @@ Dual-layer offline-first:
 - **Simulated weather:** `App.simUV()`, `App.simTemp()`, `App.simWind()` are hour-based deterministic simulations — not real APIs yet.
 - **Demo seed:** `App.seedDemo()` auto-populates sample data on first launch (if stores empty).
 - **Session:** Stored in `localStorage` as `lamatrak_user` and `lamatrak_site`. Restored on reload via `App.init()`.
+- **PIN Auth:** `PinAuth` module handles 4-digit PIN setup on first login, verification on subsequent logins, and PIN changes from Settings. PIN hashed via SHA-256 + salt stored in `localStorage`. Lockout after 5 failed attempts (5 min duration).
+
+## PIN Authentication API
+
+**PinAuth Module** (`pin-auth.js`):
+- `hashPin(pin)` — SHA-256 hash with salt (async)
+- `savePin(userId, pin)` — Save hashed PIN to localStorage
+- `verifyPin(userId, pin)` — Verify entered PIN against stored hash
+- `showPinPad(userId, userName, userRole, opts)` — Show login PIN screen (triggered on App.init if previously logged in)
+- `initiateChangePin()` — Start PIN change flow (called from Settings "Change PIN" button)
+- `initiateLogin()` — Start login flow (replaces App.login when PIN is enabled)
+- Lockout system: 5 failed attempts trigger 5-minute lockout stored in localStorage
+
+**PIN Change Flow** (users can change their PIN from Settings screen):
+1. Click "Change PIN" button on Settings (`screen-more`)
+2. `PinAuth.initiateChangePin()` prompts for current PIN (verify-current mode)
+3. If correct, prompts for new PIN (new mode)
+4. Then prompts for confirmation (confirm-new mode)
+5. On success, saves new PIN and closes overlay with success toast
+6. New PIN is hashed and stored in localStorage under `pin_hash_{userId}`
+
+**Login Flow** (only if PIN is set):
+1. User selects ranger and base station on login screen
+2. `PinAuth.initiateLogin()` shows PIN entry overlay
+3. User enters 4-digit PIN
+4. If correct, sets `currentUser` in memory and localStorage, enters dashboard
+5. If wrong, shows error and decrements attempt count
+6. After 5 failed attempts, triggers 5-minute lockout
 
 ## What's Incomplete (Next Build)
 
-- PIN authentication (login has no validation)
 - Safety Centre screen (full check-in flow, interval selector)
 - Report generator UI (NIAA JSON works; PDF export not built)
 - Elder Portal (role-gated cultural site data — currently all roles see all data)
