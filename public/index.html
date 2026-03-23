@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#0f1e28" />
   <title>LamaTrak</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -18,11 +20,7 @@
       <div class="login-glow"></div>
       <div class="login-content">
         <div class="login-logo">
-          <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
-            <circle cx="32" cy="32" r="30" stroke="#C8D9E6" stroke-width="1.5" opacity="0.3"/>
-            <path d="M32 14C29 22,21 26,19 32C17 38,22 46,32 50C42 46,47 38,45 32C43 26,35 22,32 14Z" fill="#C8D9E6" opacity="0.4"/>
-            <path d="M32 20C30 26,26 28,24 32C22 36,26 42,32 44C38 42,42 36,40 32C38 28,34 26,32 20Z" fill="#C8D9E6"/>
-          </svg>
+          <img src="/logo.png" alt="LamaTrak" style="width:80px;height:80px;filter:drop-shadow(0 0 20px rgba(122,176,212,0.3));animation:logoPulse 3s ease-in-out infinite;" />
         </div>
         <h1 class="login-title">LamaTrak</h1>
         <p class="login-sub">Lama Lama Ranger Patrol System</p>
@@ -344,8 +342,169 @@
   </div>
 
   <!-- Placeholder screens -->
-  <div id="screen-map" class="screen"><header class="dash-header"><button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button></header><main class="dash-scroll"><div class="dash-section"><div class="feed-empty"><p>Full patrol map — next build</p></div></div></main></div>
-  
+  <div id="screen-map" class="screen">
+    <!-- Map Controls Overlay -->
+    <div class="map-controls-top">
+      <button class="map-back-btn" onclick="Nav.go('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="map-title-bar">
+        <span class="map-title">Patrol Map</span>
+        <span class="map-subtitle" id="map-subtitle">Lama Lama Country</span>
+      </div>
+      <button class="map-locate-btn" onclick="PatrolMap.locateMe()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m-8-10H0m24 0h-4"/></svg>
+      </button>
+    </div>
+
+    <!-- The Map -->
+    <div id="patrol-map" class="patrol-map"></div>
+
+    <!-- Layer Toggle Panel -->
+    <div class="map-layers-panel" id="map-layers-panel">
+      <div class="map-layers-header" onclick="PatrolMap.toggleLayerPanel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <span>Layers</span>
+        <svg class="layers-chevron" id="layers-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+      </div>
+      <div class="map-layers-body" id="map-layers-body" style="display:none;">
+        <label class="layer-toggle">
+          <input type="checkbox" id="layer-coverage" checked onchange="PatrolMap.toggleLayer('coverage')"/>
+          <span class="layer-dot" style="background:#22c55e"></span>
+          <span>Coverage Heatmap</span>
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layer-observations" checked onchange="PatrolMap.toggleLayer('observations')"/>
+          <span class="layer-dot" style="background:#3b82f6"></span>
+          <span>Observations</span>
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layer-tracks" checked onchange="PatrolMap.toggleLayer('tracks')"/>
+          <span class="layer-dot" style="background:#7ab0d4"></span>
+          <span>Patrol Tracks</span>
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layer-routes" checked onchange="PatrolMap.toggleLayer('routes')"/>
+          <span class="layer-dot" style="background:#f59e0b"></span>
+          <span>Road Status</span>
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" id="layer-crossings" checked onchange="PatrolMap.toggleLayer('crossings')"/>
+          <span class="layer-dot" style="background:#ef4444"></span>
+          <span>River Crossings</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="map-stats-bar">
+      <div class="map-stat-item">
+        <span class="map-stat-val" id="map-stat-area">0</span>
+        <span class="map-stat-lbl">km covered</span>
+      </div>
+      <div class="map-stat-divider"></div>
+      <div class="map-stat-item">
+        <span class="map-stat-val" id="map-stat-obs">0</span>
+        <span class="map-stat-lbl">observations</span>
+      </div>
+      <div class="map-stat-divider"></div>
+      <div class="map-stat-item">
+        <span class="map-stat-val" id="map-stat-gaps">0</span>
+        <span class="map-stat-lbl">gap zones</span>
+      </div>
+      <div class="map-stat-divider"></div>
+      <div class="map-stat-item">
+        <span class="map-stat-val" id="map-stat-sites">4</span>
+        <span class="map-stat-lbl">sites</span>
+      </div>
+    </div>
+
+    <!-- Quick Record from Map -->
+    <button class="map-record-fab" onclick="PatrolMap.quickRecord()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg>
+    </button>
+
+    <!-- Site Info Bottom Sheet -->
+    <div class="map-site-sheet" id="map-site-sheet" style="display:none;">
+      <div class="sheet-handle" onclick="document.getElementById('map-site-sheet').style.display='none'"></div>
+      <div class="sheet-header">
+        <div class="sheet-site-icon" id="sheet-site-icon"></div>
+        <div class="sheet-site-info">
+          <div class="sheet-site-name" id="sheet-site-name">Port Stewart</div>
+          <div class="sheet-site-status" id="sheet-site-status">Active</div>
+        </div>
+      </div>
+      <div class="sheet-stats">
+        <div class="sheet-stat"><span class="sheet-stat-val" id="sheet-patrols">0</span><span class="sheet-stat-lbl">Patrols Today</span></div>
+        <div class="sheet-stat"><span class="sheet-stat-val" id="sheet-obs">0</span><span class="sheet-stat-lbl">Observations</span></div>
+        <div class="sheet-stat"><span class="sheet-stat-val" id="sheet-last">--</span><span class="sheet-stat-lbl">Last Visit</span></div>
+        <div class="sheet-stat"><span class="sheet-stat-val" id="sheet-rangers">0</span><span class="sheet-stat-lbl">Rangers</span></div>
+      </div>
+      <div class="sheet-routes" id="sheet-routes"></div>
+      <div class="sheet-actions">
+        <button class="sheet-action-btn" onclick="PatrolMap.navigateToSite()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          Navigate
+        </button>
+        <button class="sheet-action-btn primary" onclick="PatrolMap.startPatrolAtSite()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+          Start Patrol
+        </button>
+      </div>
+    </div>
+
+    <!-- Observation Popup -->
+    <div class="map-obs-popup" id="map-obs-popup" style="display:none;">
+      <button class="obs-popup-close" onclick="document.getElementById('map-obs-popup').style.display='none'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="obs-popup-type" id="obs-popup-type">Weed</div>
+      <div class="obs-popup-title" id="obs-popup-title">Lantana</div>
+      <div class="obs-popup-details" id="obs-popup-details"></div>
+      <div class="obs-popup-meta" id="obs-popup-meta">Today 7:15am</div>
+    </div>
+
+    <!-- Road Status Update -->
+    <div class="road-update-panel" id="road-update-panel" style="display:none;">
+      <div class="road-update-header">
+        <span>Update Road Status</span>
+        <button onclick="document.getElementById('road-update-panel').style.display='none'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="road-update-route" id="road-update-route">Coen to Port Stewart</div>
+      <div class="road-chips">
+        <button class="road-chip open" onclick="PatrolMap.updateRoadStatus('open')">Open</button>
+        <button class="road-chip caution" onclick="PatrolMap.updateRoadStatus('caution')">Caution</button>
+        <button class="road-chip flooded" onclick="PatrolMap.updateRoadStatus('flooded')">Flooded</button>
+        <button class="road-chip damaged" onclick="PatrolMap.updateRoadStatus('damaged')">Damaged</button>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-tab" onclick="Nav.go('dashboard')" data-screen="dashboard">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        <span>Home</span><div class="nav-line"></div>
+      </button>
+      <button class="nav-tab active" onclick="Nav.go('map')" data-screen="map">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+        <span>Map</span><div class="nav-line"></div>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('record')" data-screen="record">
+        <div class="nav-record-ring"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg></div>
+        <span>Record</span>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('safety')" data-screen="safety">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Safety</span><div class="nav-line"></div>
+      </button>
+      <button class="nav-tab" onclick="Nav.go('more')" data-screen="more">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span>More</span><div class="nav-line"></div>
+      </button>
+    </nav>
+  </div>
+    
     <div id="screen-record" class="screen">
     <header class="dash-header">
       <button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>

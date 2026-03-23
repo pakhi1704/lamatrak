@@ -353,6 +353,7 @@ var Nav={go:function(screen){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   var t=document.getElementById('screen-'+screen);if(t)t.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(function(b){b.classList.toggle('active',b.dataset.screen===screen)});
+  if(screen==='map'){setTimeout(function(){PatrolMap.init()},100)}
   if(screen==='dashboard'){App.updateCoverage();App.updateSync();App.updateSafety();App.updateSpecies();App.updateTimeline();App.updateMap()}
   if(screen==='record'){
     document.getElementById('record-no-patrol').style.display='none';document.getElementById('record-type-picker').style.display='block';document.getElementById('record-form-area').style.display='none';
@@ -619,6 +620,353 @@ var RecordForm={
     document.getElementById('photo-preview-area').innerHTML='';
     document.getElementById('f-photo').value='';
     document.getElementById('f-notes').value=''
+  }
+};
+
+/* ══ PATROL MAP ══ */
+var PatrolMap={
+  map:null,
+  layers:{coverage:null,observations:null,tracks:null,routes:null,crossings:null},
+  markers:{sites:[],obs:[],rangers:[],crossings:[]},
+  layerPanelOpen:false,
+
+  SITES_GEO:{
+    port_stewart:{lat:-14.8530,lng:144.3250,name:'Port Stewart (HQ)',status:'active',patrols:3,obs:5,last:'Today',rangers:4},
+    silver_plains:{lat:-14.9200,lng:144.1800,name:'Silver Plains',status:'active',patrols:1,obs:2,last:'Today',rangers:2},
+    lilyvale:{lat:-15.0500,lng:144.2500,name:'Lilyvale',status:'overdue',patrols:0,obs:0,last:'3 days ago',rangers:0},
+    marina_plains:{lat:-14.7800,lng:144.5000,name:'Marina Plains',status:'inactive',patrols:0,obs:0,last:'12 days ago',rangers:0}
+  },
+
+  ROUTES:[
+    {from:'port_stewart',to:'silver_plains',name:'Port Stewart to Silver Plains',status:'open',distance:'35km'},
+    {from:'silver_plains',to:'lilyvale',name:'Silver Plains to Lilyvale',status:'caution',distance:'28km'},
+    {from:'port_stewart',to:'marina_plains',name:'Port Stewart to Marina Plains',status:'flooded',distance:'42km'},
+    {from:'port_stewart',to:'coen',name:'Port Stewart to Coen',status:'open',distance:'60km'}
+  ],
+
+  CROSSINGS:[
+    {lat:-14.8800,lng:144.2800,name:'Stewart River Crossing',level:'low'},
+    {lat:-14.9500,lng:144.2200,name:'Massey Creek Ford',level:'medium'},
+    {lat:-14.8200,lng:144.4200,name:'North Creek Crossing',level:'high'},
+    {lat:-15.0100,lng:144.2300,name:'Sandy Creek Ford',level:'low'}
+  ],
+
+  init:function(){
+    if(PatrolMap.map)return;
+    var mapEl=document.getElementById('patrol-map');
+    if(!mapEl)return;
+
+    PatrolMap.map=L.map('patrol-map',{
+      center:[-14.88,144.32],
+      zoom:11,
+      zoomControl:false,
+      attributionControl:false
+    });
+
+    L.control.zoom({position:'bottomleft'}).addTo(PatrolMap.map);
+
+    // Satellite tile layer
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      maxZoom:18
+    }).addTo(PatrolMap.map);
+
+    // Semi-transparent label overlay
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
+      maxZoom:18,opacity:0.7
+    }).addTo(PatrolMap.map);
+
+    PatrolMap.addSiteMarkers();
+    PatrolMap.addRouteLines();
+    PatrolMap.addCrossingMarkers();
+    PatrolMap.loadObservationMarkers();
+    PatrolMap.loadTrackLines();
+    PatrolMap.addCoverageHeatmap();
+    PatrolMap.updateStats();
+
+    // Invalidate size after animation
+    setTimeout(function(){PatrolMap.map.invalidateSize()},400);
+  },
+
+  addSiteMarkers:function(){
+    var sites=PatrolMap.SITES_GEO;
+    var keys=Object.keys(sites);
+    for(var i=0;i<keys.length;i++){
+      var key=keys[i];
+      var s=sites[key];
+      var iconClass='site-marker '+s.status;
+      var initial=s.name.charAt(0);
+      var icon=L.divIcon({className:'',html:'<div class="'+iconClass+'">'+initial+'</div>',iconSize:[36,36],iconAnchor:[18,18]});
+      var marker=L.marker([s.lat,s.lng],{icon:icon}).addTo(PatrolMap.map);
+      marker.siteKey=key;
+      marker.on('click',function(e){PatrolMap.showSiteSheet(e.target.siteKey)});
+      PatrolMap.markers.sites.push(marker);
+
+      // Add site label
+      L.marker([s.lat,s.lng],{
+        icon:L.divIcon({
+          className:'',
+          html:'<div style="font-family:Poppins,sans-serif;font-size:10px;font-weight:600;color:var(--white);text-shadow:0 1px 4px rgba(0,0,0,0.8);white-space:nowrap;text-align:center;transform:translateY(22px)">'+s.name+'</div>',
+          iconSize:[120,20],iconAnchor:[60,-10]
+        })
+      }).addTo(PatrolMap.map);
+    }
+  },
+
+  addRouteLines:function(){
+    PatrolMap.layers.routes=L.layerGroup().addTo(PatrolMap.map);
+  },
+
+  addCrossingMarkers:function(){
+    PatrolMap.layers.crossings=L.layerGroup().addTo(PatrolMap.map);
+    var levelColors={low:'#3b82f6',medium:'#f59e0b',high:'#ef4444'};
+    for(var i=0;i<PatrolMap.CROSSINGS.length;i++){
+      var c=PatrolMap.CROSSINGS[i];
+      var cls='crossing-marker'+(c.level==='high'?' high':c.level==='medium'?' medium':'');
+      var icon=L.divIcon({className:'',html:'<div class="'+cls+'">'+c.level.charAt(0).toUpperCase()+'</div>',iconSize:[28,28],iconAnchor:[14,14]});
+      var marker=L.marker([c.lat,c.lng],{icon:icon});
+      marker.crossingData=c;
+      marker.on('click',function(e){
+        var d=e.target.crossingData;
+        Toast.show(d.name+' - Water level: '+d.level.toUpperCase(),'info');
+      });
+      PatrolMap.layers.crossings.addLayer(marker);
+    }
+  },
+
+  loadObservationMarkers:async function(){
+    if(PatrolMap.layers.observations){PatrolMap.map.removeLayer(PatrolMap.layers.observations)}
+    PatrolMap.layers.observations=L.layerGroup().addTo(PatrolMap.map);
+
+    var allObs=await LocalDB.getAll('observations');
+    var typeInitials={weed:'W',feral_animal:'F',marine:'M',water_quality:'Q',cultural_site:'C'};
+    var typeClass={weed:'weed',feral_animal:'feral',marine:'marine',water_quality:'water',cultural_site:'cultural'};
+
+    for(var i=0;i<allObs.length;i++){
+      var o=allObs[i];
+      if(!o.lat||!o.lng)continue;
+      var cls='obs-marker '+(typeClass[o.type]||'');
+      var init=typeInitials[o.type]||'?';
+      var icon=L.divIcon({className:'',html:'<div class="'+cls+'">'+init+'</div>',iconSize:[24,24],iconAnchor:[12,12]});
+      var marker=L.marker([o.lat,o.lng],{icon:icon});
+      marker.obsData=o;
+      marker.on('click',function(e){PatrolMap.showObsPopup(e.target.obsData)});
+      PatrolMap.layers.observations.addLayer(marker);
+    }
+    document.getElementById('map-stat-obs').textContent=allObs.length;
+  },
+
+  loadTrackLines:async function(){
+    if(PatrolMap.layers.tracks){PatrolMap.map.removeLayer(PatrolMap.layers.tracks)}
+    PatrolMap.layers.tracks=L.layerGroup().addTo(PatrolMap.map);
+
+    var allTracks=await LocalDB.getAll('tracks');
+    var allPatrols=await LocalDB.getAll('patrols');
+
+    // Group tracks by patrol
+    var grouped={};
+    for(var i=0;i<allTracks.length;i++){
+      var t=allTracks[i];
+      if(!grouped[t.patrol_id])grouped[t.patrol_id]=[];
+      grouped[t.patrol_id].push([t.lat,t.lng]);
+    }
+
+    var typeColors={land:'#22c55e',sea:'#3b82f6',cultural_site:'#a855f7'};
+    var patrolMap={};
+    for(var j=0;j<allPatrols.length;j++)patrolMap[allPatrols[j].id]=allPatrols[j];
+
+    var keys=Object.keys(grouped);
+    for(var k=0;k<keys.length;k++){
+      var pid=keys[k];
+      var points=grouped[pid];
+      if(points.length<2)continue;
+      var patrol=patrolMap[pid];
+      var color=patrol?typeColors[patrol.patrol_type]||'#7ab0d4':'#7ab0d4';
+      var line=L.polyline(points,{color:color,weight:3,opacity:0.7,smoothFactor:1});
+      PatrolMap.layers.tracks.addLayer(line);
+    }
+
+    // Calculate km
+    var totalKm=Math.round(allTracks.length*0.05);
+    document.getElementById('map-stat-area').textContent=totalKm;
+  },
+
+  addCoverageHeatmap:function(){
+    // Simple coverage visualization using circles
+    PatrolMap.layers.coverage=L.layerGroup().addTo(PatrolMap.map);
+    var sites=PatrolMap.SITES_GEO;
+    var keys=Object.keys(sites);
+    for(var i=0;i<keys.length;i++){
+      var s=sites[keys[i]];
+      var radius=s.status==='active'?5000:s.status==='overdue'?2000:500;
+      var color=s.status==='active'?'#22c55e':s.status==='overdue'?'#f59e0b':'#ef4444';
+      var circle=L.circle([s.lat,s.lng],{
+        radius:radius,color:color,fillColor:color,fillOpacity:0.08,weight:1,opacity:0.3
+      });
+      PatrolMap.layers.coverage.addLayer(circle);
+    }
+
+    // Add gap zone indicators
+    var gaps=[
+      {lat:-14.95,lng:144.40,name:'East Sector'},
+      {lat:-15.10,lng:144.30,name:'South Sector'},
+      {lat:-14.80,lng:144.15,name:'West Ridge'}
+    ];
+    for(var j=0;j<gaps.length;j++){
+      var g=gaps[j];
+      var gapCircle=L.circle([g.lat,g.lng],{
+        radius:3000,color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.05,weight:1.5,opacity:0.4,dashArray:'6 4'
+      });
+      gapCircle.bindTooltip(g.name+' - No recent patrol',{className:'gap-tooltip'});
+      PatrolMap.layers.coverage.addLayer(gapCircle);
+    }
+    document.getElementById('map-stat-gaps').textContent=gaps.length;
+  },
+
+  showSiteSheet:function(siteKey){
+    var s=PatrolMap.SITES_GEO[siteKey];
+    if(!s)return;
+
+    document.getElementById('sheet-site-name').textContent=s.name;
+    var statusEl=document.getElementById('sheet-site-status');
+    statusEl.textContent=s.status==='active'?'Active - Rangers on site':s.status==='overdue'?'Overdue - Needs patrol':'Inactive';
+    statusEl.className='sheet-site-status '+s.status;
+    document.getElementById('sheet-patrols').textContent=s.patrols;
+    document.getElementById('sheet-obs').textContent=s.obs;
+    document.getElementById('sheet-last').textContent=s.last;
+    document.getElementById('sheet-rangers').textContent=s.rangers;
+
+    var iconEl=document.getElementById('sheet-site-icon');
+    iconEl.textContent=s.name.charAt(0);
+    iconEl.style.background=s.status==='active'?'var(--success)':s.status==='overdue'?'var(--warning)':'var(--text-muted)';
+    iconEl.style.color='var(--white)';
+
+    // Routes from this site
+    var routeHtml='';
+    for(var i=0;i<PatrolMap.ROUTES.length;i++){
+      var r=PatrolMap.ROUTES[i];
+      if(r.from===siteKey||r.to===siteKey){
+        routeHtml+='<div class="sheet-route-row">'+
+          '<span class="route-status-dot '+r.status+'"></span>'+
+          '<span class="sheet-route-name">'+r.name+'</span>'+
+          '<span class="sheet-route-status '+r.status+'">'+r.status+'</span>'+
+        '</div>';
+      }
+    }
+    document.getElementById('sheet-routes').innerHTML=routeHtml;
+
+    document.getElementById('map-site-sheet').style.display='block';
+    document.getElementById('map-obs-popup').style.display='none';
+
+    PatrolMap.map.flyTo([s.lat,s.lng],13,{duration:0.8});
+  },
+
+  showObsPopup:function(obs){
+    var data=typeof obs.data==='string'?JSON.parse(obs.data):obs.data;
+    var typeLabels={weed:'Weed Sighting',feral_animal:'Feral Animal',marine:'Marine Species',water_quality:'Water Quality',cultural_site:'Cultural Site'};
+    var typeClass={weed:'weed',feral_animal:'feral',marine:'marine',water_quality:'water',cultural_site:'cultural'};
+
+    var typeEl=document.getElementById('obs-popup-type');
+    typeEl.textContent=typeLabels[obs.type]||obs.type;
+    typeEl.className='obs-popup-type '+(typeClass[obs.type]||'');
+
+    var title=data.species||data.site_condition||data.visual||'Observation';
+    if(title.indexOf('(')>-1)title=title.split('(')[1].replace(')','');
+    document.getElementById('obs-popup-title').textContent=title;
+
+    var details='';
+    if(data.density)details+='Density: '+data.density+'<br>';
+    if(data.count)details+='Count: '+data.count+'<br>';
+    if(data.behaviour)details+='Behaviour: '+data.behaviour+'<br>';
+    if(data.activity)details+='Activity: '+data.activity+'<br>';
+    if(data.spread_radius)details+='Spread: '+data.spread_radius+'m<br>';
+    if(data.ph)details+='pH: '+data.ph+' | ';
+    if(data.turbidity)details+='Turbidity: '+data.turbidity+'<br>';
+    if(data.notes)details+=data.notes;
+    document.getElementById('obs-popup-details').innerHTML=details;
+
+    var time=new Date(obs.recorded_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('obs-popup-meta').textContent=time+(obs.synced?' - Synced':' - Pending sync');
+
+    document.getElementById('map-obs-popup').style.display='block';
+    document.getElementById('map-site-sheet').style.display='none';
+  },
+
+  showRouteUpdate:function(route){
+    document.getElementById('road-update-route').textContent=route.name+' ('+route.distance+')';
+    document.getElementById('road-update-panel').style.display='block';
+    document.getElementById('map-site-sheet').style.display='none';
+    document.getElementById('map-obs-popup').style.display='none';
+    PatrolMap.currentRoute=route;
+  },
+
+  updateRoadStatus:function(status){
+    if(PatrolMap.currentRoute){
+      PatrolMap.currentRoute.status=status;
+      Toast.show('Road status updated to '+status.toUpperCase(),'success');
+      document.getElementById('road-update-panel').style.display='none';
+      // Refresh routes
+      if(PatrolMap.layers.routes){PatrolMap.map.removeLayer(PatrolMap.layers.routes)}
+      PatrolMap.addRouteLines();
+    }
+  },
+
+  toggleLayerPanel:function(){
+    PatrolMap.layerPanelOpen=!PatrolMap.layerPanelOpen;
+    document.getElementById('map-layers-body').style.display=PatrolMap.layerPanelOpen?'block':'none';
+    document.getElementById('layers-chevron').classList.toggle('open',PatrolMap.layerPanelOpen);
+  },
+
+  toggleLayer:function(layerName){
+    var layer=PatrolMap.layers[layerName];
+    if(!layer)return;
+    var checkbox=document.getElementById('layer-'+layerName);
+    if(checkbox.checked){
+      PatrolMap.map.addLayer(layer);
+    }else{
+      PatrolMap.map.removeLayer(layer);
+    }
+  },
+
+  locateMe:function(){
+    if(!GPS.lastPosition){
+      Toast.show('Acquiring GPS...','info');
+      GPS.getCurrentPosition().then(function(pos){
+        if(pos){
+          PatrolMap.map.flyTo([pos.coords.latitude,pos.coords.longitude],15,{duration:1});
+          // Add ranger marker
+          var icon=L.divIcon({className:'',html:'<div class="ranger-marker"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ab0d4" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></div>',iconSize:[32,32],iconAnchor:[16,16]});
+          L.marker([pos.coords.latitude,pos.coords.longitude],{icon:icon}).addTo(PatrolMap.map);
+          Toast.show('Location found','success');
+        }else{
+          Toast.show('Could not get GPS','warning');
+        }
+      });
+    }else{
+      var c=GPS.lastPosition.coords;
+      PatrolMap.map.flyTo([c.latitude,c.longitude],15,{duration:1});
+    }
+  },
+
+  quickRecord:function(){
+    Nav.go('record');
+  },
+
+  navigateToSite:function(){
+    Toast.show('Navigation not available offline','info');
+    document.getElementById('map-site-sheet').style.display='none';
+  },
+
+  startPatrolAtSite:function(){
+    document.getElementById('map-site-sheet').style.display='none';
+    Nav.go('dashboard');
+    setTimeout(function(){
+      var firstCard=document.querySelector('.patrol-start-card');
+      if(firstCard)firstCard.click();
+    },500);
+  },
+
+  updateStats:function(){
+    document.getElementById('map-stat-sites').textContent='4';
   }
 };
 
