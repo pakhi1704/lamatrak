@@ -17,20 +17,22 @@ Single HTML file SPA, no framework, no bundler, no TypeScript:
 
 ```
 public/
-  index.html    — All screen markup (6 screens in one file)
-  app.js        — All frontend logic (App, Nav, Patrol, GPS, PatrolMap, Safety, RecordForm)
-  db.js         — IndexedDB wrapper (5 stores)
-  sync.js       — Background sync engine + Toast notifications
-  sw.js         — Service Worker (stale-while-revalidate for app shell, network-only for /api/*)
-  styles.css    — All styles
-  manifest.json — PWA manifest
-server.js       — Express + SQL.js (WASM SQLite) + REST API
+  index.html          — All screen markup (6 screens in one file)
+  app.js              — All frontend logic (App, Nav, Patrol, GPS, PatrolMap, Safety, RecordForm)
+  db.js               — IndexedDB wrapper (5 stores)
+  sync.js             — Background sync engine + Toast notifications
+  sw.js               — Service Worker (stale-while-revalidate for app shell, network-only for /api/*)
+  styles.css          — All styles
+  pin-auth.js         — PIN authentication module (PinAuth)
+  pin-auth-styles.css — Styles for PIN overlay/pad UI
+  manifest.json       — PWA manifest
+server.js             — Express + SQL.js (WASM SQLite) + REST API
 ```
 
 ## Frontend Code Style
 
 - Module-level globals use `var` (e.g. `var App = {...}`) — do not convert to `const`/`class`
-- All features namespaced as objects: `App`, `Nav`, `Patrol`, `GPS`, `PatrolMap`, `Safety`, `RecordForm`, `LocalDB`, `SyncEngine`, `Toast`
+- All features namespaced as objects: `App`, `Nav`, `Patrol`, `GPS`, `PatrolMap`, `Safety`, `RecordForm`, `LocalDB`, `SyncEngine`, `Toast`, `PinAuth`
 - No imports/exports — all scripts loaded globally via `<script>` tags
 - Screen switching: `Nav.go('screen-name')` hides/shows `<div id="screen-*">` elements
 - DOM manipulation via vanilla JS only (`getElementById`, `querySelector`)

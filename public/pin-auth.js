@@ -413,12 +413,10 @@ pressKey: function(key, btn) {
   /* Called by the login button (replaces App.login) */
   initiateLogin: function() {
     var sel = document.getElementById('login-user');
+    var opt = sel.options[sel.selectedIndex];
     var userId = sel.value;
-    var txt = sel.options[sel.selectedIndex].text;
-    var name = txt.split(' (')[0];
-    var role = 'ranger';
-    if (txt.indexOf('elder') > -1) role = 'elder';
-    else if (txt.indexOf('senior') > -1) role = 'senior_ranger';
+    var name = opt.text.split(' (')[0];
+    var role = opt.getAttribute('data-role') || 'ranger';
     PinAuth.showPinPad(userId, name, role);
   },
 

@@ -62,7 +62,7 @@
       </div>
       <div class="dash-header-right">
         <div class="dash-site-pill" id="dash-site">Port Stewart</div>
-        <button class="dash-sync-btn" onclick="SyncEngine.manualSync()">
+        <button class="dash-sync-btn" onclick="SyncEngine.manualSync()" aria-label="Sync data">
           <span class="status-dot" id="sync-dot"></span>
         </button>
       </div>
@@ -71,7 +71,7 @@
     <div id="alert-banner" class="alert-banner" style="display:none;">
       <div class="alert-icon" id="alert-icon"></div>
       <div class="alert-text" id="alert-text"></div>
-      <button class="alert-close" onclick="document.getElementById('alert-banner').style.display='none'">
+      <button class="alert-close" onclick="document.getElementById('alert-banner').style.display='none'" aria-label="Dismiss alert">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
@@ -270,10 +270,10 @@
       </button>
       <span class="map-screen-title">Patrol Map</span>
       <div class="map-hdr-actions">
-        <button id="map-heat-btn" class="map-ctrl-btn" onclick="PatrolMap.toggleHeatmap()" title="Toggle heatmap">
+        <button id="map-heat-btn" class="map-ctrl-btn" onclick="PatrolMap.toggleHeatmap()" title="Toggle heatmap" aria-label="Toggle heatmap">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6v6l4 2"/></svg>
         </button>
-        <button class="map-ctrl-btn" onclick="PatrolMap.locateUser()" title="My location">
+        <button class="map-ctrl-btn" onclick="PatrolMap.locateUser()" title="My location" aria-label="My location">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9"/></svg>
         </button>
       </div>
@@ -345,13 +345,13 @@
         <!-- Weed Form -->
         <div id="form-weed" class="obs-form-card" style="display:none;">
           <div class="form-group">
-            <label class="form-label">Species</label>
+            <label class="form-label" for="f-weed-species">Species</label>
             <input type="text" id="f-weed-species" class="form-input" placeholder="Search species..." list="weed-list" />
             <datalist id="weed-list"></datalist>
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label">Density</label>
+              <label class="form-label" for="f-weed-density">Density</label>
               <select id="f-weed-density" class="form-select">
                 <option value="scattered">Scattered</option>
                 <option value="moderate">Moderate</option>
@@ -360,7 +360,7 @@
               </select>
             </div>
             <div class="form-group half">
-              <label class="form-label">Spread (m)</label>
+              <label class="form-label" for="f-weed-radius">Spread (m)</label>
               <input type="number" id="f-weed-radius" class="form-input" placeholder="0" />
             </div>
           </div>
@@ -380,7 +380,7 @@
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label">Count</label>
+              <label class="form-label" for="f-feral-count">Count</label>
               <div class="counter-wrap">
                 <button class="counter-btn" onclick="RecordForm.adjustCount('f-feral-count',-1)">-</button>
                 <input type="number" id="f-feral-count" class="counter-input" value="1" />
@@ -388,7 +388,7 @@
               </div>
             </div>
             <div class="form-group half">
-              <label class="form-label">Behaviour</label>
+              <label class="form-label" for="f-feral-behaviour">Behaviour</label>
               <select id="f-feral-behaviour" class="form-select">
                 <option value="grazing">Grazing</option>
                 <option value="moving">Moving</option>
@@ -415,7 +415,7 @@
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label">Count</label>
+              <label class="form-label" for="f-marine-count">Count</label>
               <div class="counter-wrap">
                 <button class="counter-btn" onclick="RecordForm.adjustCount('f-marine-count',-1)">-</button>
                 <input type="number" id="f-marine-count" class="counter-input" value="1" />
@@ -423,7 +423,7 @@
               </div>
             </div>
             <div class="form-group half">
-              <label class="form-label">Activity</label>
+              <label class="form-label" for="f-marine-activity">Activity</label>
               <select id="f-marine-activity" class="form-select">
                 <option value="feeding">Feeding</option>
                 <option value="travelling">Travelling</option>
@@ -447,21 +447,21 @@
         <div id="form-water_quality" class="obs-form-card" style="display:none;">
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label">pH</label>
+              <label class="form-label" for="f-wq-ph">pH</label>
               <input type="number" id="f-wq-ph" class="form-input" step="0.1" placeholder="7.0" />
             </div>
             <div class="form-group half">
-              <label class="form-label">Turbidity (NTU)</label>
+              <label class="form-label" for="f-wq-turbidity">Turbidity (NTU)</label>
               <input type="number" id="f-wq-turbidity" class="form-input" step="0.1" placeholder="0" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label">Temp (C)</label>
+              <label class="form-label" for="f-wq-temp">Temp (C)</label>
               <input type="number" id="f-wq-temp" class="form-input" step="0.1" placeholder="28" />
             </div>
             <div class="form-group half">
-              <label class="form-label">Dissolved O2 (mg/L)</label>
+              <label class="form-label" for="f-wq-do">Dissolved O2 (mg/L)</label>
               <input type="number" id="f-wq-do" class="form-input" step="0.1" placeholder="6.5" />
             </div>
           </div>
@@ -513,7 +513,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Notes (optional)</label>
+            <label class="form-label" for="f-notes">Notes (optional)</label>
             <textarea id="f-notes" class="form-textarea" placeholder="Quick notes..." rows="2"></textarea>
           </div>
           <div class="gps-bar">

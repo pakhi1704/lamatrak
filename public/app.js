@@ -54,16 +54,14 @@ var App={
     var sel=document.getElementById('login-user'),users=[];
     try{var r=await fetch('/api/users');if(r.ok){users=await r.json();for(var i=0;i<users.length;i++)await LocalDB.put('users',users[i])}}catch(e){users=await LocalDB.getAll('users')}
     if(users.length===0){users=[{id:'u-elder-001',name:'Karen Liddy',role:'elder'},{id:'u-senior-001',name:'Senior Ranger',role:'senior_ranger'},{id:'u-ranger-001',name:'Krishna Gupta',role:'ranger'},{id:'u-ranger-002',name:'Ranger 2',role:'ranger'}];for(var j=0;j<users.length;j++)await LocalDB.put('users',users[j])}
-    sel.innerHTML=users.map(function(u){return'<option value="'+u.id+'">'+u.name+' ('+u.role.replace('_',' ')+')</option>'}).join('')
+    sel.innerHTML=users.map(function(u){return'<option value="'+u.id+'" data-role="'+u.role+'">'+u.name+' ('+u.role.replace('_',' ')+')</option>'}).join('')
   },
 
   login:function(){
     var s=document.getElementById('login-user');
-    var txt=s.options[s.selectedIndex].text;
-    var name=txt.split(' (')[0];
-    var role='ranger';
-    if(txt.indexOf('elder')>-1)role='elder';
-    else if(txt.indexOf('senior')>-1)role='senior_ranger';
+    var opt=s.options[s.selectedIndex];
+    var name=opt.text.split(' (')[0];
+    var role=opt.getAttribute('data-role')||'ranger';
     currentUser={id:s.value,name:name,role:role};
     activeSite=document.getElementById('login-site').value;
     localStorage.setItem('lamatrak_user',JSON.stringify(currentUser));
@@ -549,22 +547,25 @@ var PatrolMap={
 
 /* ══ SAFETY ══ */
 var Safety={
-  checkIn:function(){
+  checkIn:async function(){
     if(!currentUser)return;var pos=GPS.lastPosition;
-    LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,pos?pos.coords.latitude:null,pos?pos.coords.longitude:null,'ok');
+    try{await LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,pos?pos.coords.latitude:null,pos?pos.coords.longitude:null,'ok')}
+    catch(e){Toast.show('Check-in failed \u2014 try again','error');return}
     Toast.show("Check-in recorded \u2014 you're doing great",'success');Safety.resetCheckinTimer()
   },
-  needHelp:function(){
+  needHelp:async function(){
     if(!confirm('Send HELP REQUEST to Port Stewart base?\n\nThis is for non-emergencies (vehicle stuck, equipment failure, etc).\nYour GPS location will be shared.'))return;
     var pos=GPS.lastPosition;
-    LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,pos?pos.coords.latitude:null,pos?pos.coords.longitude:null,'help');
+    try{await LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,pos?pos.coords.latitude:null,pos?pos.coords.longitude:null,'help')}
+    catch(e){Toast.show('Help request failed \u2014 try again','error');return}
     Toast.show('Help request sent \u2014 base has your location','warning');
     if(SyncEngine.isOnline)SyncEngine.pushToServer()
   },
-  sos:function(){
+  sos:async function(){
     if(!confirm('\u26A0\uFE0F EMERGENCY SOS \u26A0\uFE0F\n\nThis sends an EMERGENCY alert to Port Stewart base with your exact GPS location.\n\nOnly use for life-threatening situations.\n\nSend SOS?'))return;
     var pos=GPS.lastPosition;
-    LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,pos?pos.coords.latitude:null,pos?pos.coords.longitude:null,'sos');
+    try{await LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,pos?pos.coords.latitude:null,pos?pos.coords.longitude:null,'sos')}
+    catch(e){Toast.show('SOS record failed \u2014 try again immediately','error');return}
     Toast.show('SOS EMERGENCY SENT \u2014 help is on the way','error');
     if(SyncEngine.isOnline)SyncEngine.pushToServer()
   },
@@ -575,7 +576,7 @@ var Safety={
     checkinTimer=setInterval(function(){
       if(Date.now()>=nextCheckinTime){
         Toast.show('CHECK-IN OVERDUE \u2014 tap "I\'m Safe" now','warning');
-        LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,null,null,'missed');
+        LocalDB.createCheckin(currentUser.id,activePatrol?activePatrol.id:null,null,null,'missed').catch(function(){});
         Safety.resetCheckinTimer()
       }
     },5000)
@@ -695,13 +696,19 @@ var RecordForm={
 
     switch(RecordForm.currentType){
       case'weed':
-        data={species:document.getElementById('f-weed-species').value,density:document.getElementById('f-weed-density').value,spread_radius:parseFloat(document.getElementById('f-weed-radius').value)||0,notes:notes};
+        var weedSpecies=document.getElementById('f-weed-species').value.trim();
+        if(!weedSpecies){Toast.show('Enter a weed species','warning');return}
+        data={species:weedSpecies,density:document.getElementById('f-weed-density').value,spread_radius:parseFloat(document.getElementById('f-weed-radius').value)||0,notes:notes};
         break;
       case'feral_animal':
-        data={species:RecordForm.getActiveChip('feral-chips'),count:parseInt(document.getElementById('f-feral-count').value)||1,behaviour:document.getElementById('f-feral-behaviour').value,notes:notes};
+        var feralSpecies=RecordForm.getActiveChip('feral-chips');
+        if(!feralSpecies){Toast.show('Select a feral animal species','warning');return}
+        data={species:feralSpecies,count:parseInt(document.getElementById('f-feral-count').value)||1,behaviour:document.getElementById('f-feral-behaviour').value,notes:notes};
         break;
       case'marine':
-        data={species:RecordForm.getActiveChip('marine-chips'),activity:document.getElementById('f-marine-activity').value,count:parseInt(document.getElementById('f-marine-count').value)||1,tumra_area:RecordForm.getActiveChip('tumra-chips'),notes:notes};
+        var marineSpecies=RecordForm.getActiveChip('marine-chips');
+        if(!marineSpecies){Toast.show('Select a marine species','warning');return}
+        data={species:marineSpecies,activity:document.getElementById('f-marine-activity').value,count:parseInt(document.getElementById('f-marine-count').value)||1,tumra_area:RecordForm.getActiveChip('tumra-chips'),notes:notes};
         break;
       case'water_quality':
         data={ph:parseFloat(document.getElementById('f-wq-ph').value)||null,turbidity:parseFloat(document.getElementById('f-wq-turbidity').value)||null,temperature:parseFloat(document.getElementById('f-wq-temp').value)||null,dissolved_oxygen:parseFloat(document.getElementById('f-wq-do').value)||null,visual:RecordForm.getActiveChip('wq-chips'),notes:notes};
@@ -718,8 +725,8 @@ var RecordForm={
     if(photoInput&&photoInput.files&&photoInput.files.length>0){
       var file=photoInput.files[0];
       var reader=new FileReader();
-      var base64=await new Promise(function(resolve){reader.onload=function(){resolve(reader.result)};reader.readAsDataURL(file)});
-      photoPaths.push(base64)
+      var base64=await new Promise(function(resolve,reject){reader.onload=function(){resolve(reader.result)};reader.onerror=function(){reject(new Error('Photo read failed'))};;reader.readAsDataURL(file)}).catch(function(){Toast.show('Could not read photo \u2014 observation saved without it','warning');return null});
+      if(base64)photoPaths.push(base64)
     }
 
     // Save to IndexedDB
