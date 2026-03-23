@@ -75,7 +75,7 @@ var App={
 
   enterDashboard:function(){
     var h=new Date().getHours();
-    document.getElementById('dash-greeting').textContent=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+    document.getElementById('dash-greeting').textContent=h<12?'Good afternoon nigga':h<17?'Good afternoon':'Good evening';
     document.getElementById('dash-ranger').textContent=currentUser.name;
     document.getElementById('dash-site').textContent=SITES[activeSite]||'Port Stewart';
     Nav.go('dashboard');
