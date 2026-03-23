@@ -20,8 +20,8 @@ body{font-family:'Poppins',system-ui,sans-serif;background:var(--bg);color:var(-
 @keyframes screenIn{from{opacity:0}to{opacity:1}}
 
 /* ══ LOGIN ══ */
-.login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#1a2e3a 0%,#2a4a5e 100%);position:relative;overflow:hidden}
-.login-glow{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(200,217,230,0.1) 0%,transparent 70%);top:10%;left:50%;transform:translateX(-50%);animation:glowFloat 6s ease-in-out infinite alternate}
+.login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0b1219 0%,#0f1c28 25%,#142535 55%,#1a2e3a 80%,#1c3248 100%);position:relative;overflow:hidden}
+.login-glow{position:absolute;z-index:1;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(200,217,230,0.1) 0%,transparent 70%);top:10%;left:50%;transform:translateX(-50%);animation:glowFloat 6s ease-in-out infinite alternate}
 @keyframes glowFloat{0%{transform:translateX(-50%) translateY(0)}100%{transform:translateX(-50%) translateY(-20px)}}
 .login-content{position:relative;z-index:2;width:100%;max-width:380px;padding:32px 24px}
 .login-logo{text-align:center;margin-bottom:16px;animation:logoIn .8s var(--ease)}
