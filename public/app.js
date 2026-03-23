@@ -7,6 +7,7 @@ function countUp(el,target,dur,sfx){dur=dur||800;sfx=sfx||'';var st=null;functio
 
 var App={
   init:async function(){
+    NatureBg.init();NatureBg.start();
     await LocalDB.init();SyncEngine.init();await App.loadUsers();await App.seedDemo();
     var p=await LocalDB.getAllByIndex('patrols','status','active');
     if(p.length>0)activePatrol=p[0];
@@ -343,6 +344,7 @@ var App={
 
 /* ══ NAV ══ */
 var Nav={go:function(screen){
+  if(screen==='login'){NatureBg.start()}else{NatureBg.stop()}
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   var t=document.getElementById('screen-'+screen);if(t)t.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(function(b){b.classList.toggle('active',b.dataset.screen===screen)});
