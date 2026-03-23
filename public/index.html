@@ -20,12 +20,6 @@
   <div id="screen-login" class="screen active">
     <div class="login-bg">
       <div class="login-glow"></div>
-      <div class="particle particle-1"></div>
-      <div class="particle particle-2"></div>
-      <div class="particle particle-3"></div>
-      <div class="particle particle-4"></div>
-      <div class="particle particle-5"></div>
-      <div class="particle particle-6"></div>
       <div class="login-content">
         <div class="login-logo">
           <img src="/logo2.png" alt="LamaTrak" style="width: 220px; height: 220px; object-fit: contain;" />
@@ -68,7 +62,7 @@
       </div>
       <div class="dash-header-right">
         <div class="dash-site-pill" id="dash-site">Port Stewart</div>
-        <button class="dash-sync-btn" onclick="SyncEngine.manualSync()" aria-label="Sync data">
+        <button class="dash-sync-btn" onclick="SyncEngine.manualSync()">
           <span class="status-dot" id="sync-dot"></span>
         </button>
       </div>
@@ -77,7 +71,7 @@
     <div id="alert-banner" class="alert-banner" style="display:none;">
       <div class="alert-icon" id="alert-icon"></div>
       <div class="alert-text" id="alert-text"></div>
-      <button class="alert-close" onclick="document.getElementById('alert-banner').style.display='none'" aria-label="Dismiss alert">
+      <button class="alert-close" onclick="document.getElementById('alert-banner').style.display='none'">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
@@ -276,10 +270,10 @@
       </button>
       <span class="map-screen-title">Patrol Map</span>
       <div class="map-hdr-actions">
-        <button id="map-heat-btn" class="map-ctrl-btn" onclick="PatrolMap.toggleHeatmap()" title="Toggle heatmap" aria-label="Toggle heatmap">
+        <button id="map-heat-btn" class="map-ctrl-btn" onclick="PatrolMap.toggleHeatmap()" title="Toggle heatmap">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6v6l4 2"/></svg>
         </button>
-        <button class="map-ctrl-btn" onclick="PatrolMap.locateUser()" title="My location" aria-label="My location">
+        <button class="map-ctrl-btn" onclick="PatrolMap.locateUser()" title="My location">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9"/></svg>
         </button>
       </div>
@@ -351,13 +345,13 @@
         <!-- Weed Form -->
         <div id="form-weed" class="obs-form-card" style="display:none;">
           <div class="form-group">
-            <label class="form-label" for="f-weed-species">Species</label>
+            <label class="form-label">Species</label>
             <input type="text" id="f-weed-species" class="form-input" placeholder="Search species..." list="weed-list" />
             <datalist id="weed-list"></datalist>
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label" for="f-weed-density">Density</label>
+              <label class="form-label">Density</label>
               <select id="f-weed-density" class="form-select">
                 <option value="scattered">Scattered</option>
                 <option value="moderate">Moderate</option>
@@ -366,7 +360,7 @@
               </select>
             </div>
             <div class="form-group half">
-              <label class="form-label" for="f-weed-radius">Spread (m)</label>
+              <label class="form-label">Spread (m)</label>
               <input type="number" id="f-weed-radius" class="form-input" placeholder="0" />
             </div>
           </div>
@@ -386,7 +380,7 @@
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label" for="f-feral-count">Count</label>
+              <label class="form-label">Count</label>
               <div class="counter-wrap">
                 <button class="counter-btn" onclick="RecordForm.adjustCount('f-feral-count',-1)">-</button>
                 <input type="number" id="f-feral-count" class="counter-input" value="1" />
@@ -394,7 +388,7 @@
               </div>
             </div>
             <div class="form-group half">
-              <label class="form-label" for="f-feral-behaviour">Behaviour</label>
+              <label class="form-label">Behaviour</label>
               <select id="f-feral-behaviour" class="form-select">
                 <option value="grazing">Grazing</option>
                 <option value="moving">Moving</option>
@@ -421,7 +415,7 @@
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label" for="f-marine-count">Count</label>
+              <label class="form-label">Count</label>
               <div class="counter-wrap">
                 <button class="counter-btn" onclick="RecordForm.adjustCount('f-marine-count',-1)">-</button>
                 <input type="number" id="f-marine-count" class="counter-input" value="1" />
@@ -429,7 +423,7 @@
               </div>
             </div>
             <div class="form-group half">
-              <label class="form-label" for="f-marine-activity">Activity</label>
+              <label class="form-label">Activity</label>
               <select id="f-marine-activity" class="form-select">
                 <option value="feeding">Feeding</option>
                 <option value="travelling">Travelling</option>
@@ -453,21 +447,21 @@
         <div id="form-water_quality" class="obs-form-card" style="display:none;">
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label" for="f-wq-ph">pH</label>
+              <label class="form-label">pH</label>
               <input type="number" id="f-wq-ph" class="form-input" step="0.1" placeholder="7.0" />
             </div>
             <div class="form-group half">
-              <label class="form-label" for="f-wq-turbidity">Turbidity (NTU)</label>
+              <label class="form-label">Turbidity (NTU)</label>
               <input type="number" id="f-wq-turbidity" class="form-input" step="0.1" placeholder="0" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label" for="f-wq-temp">Temp (C)</label>
+              <label class="form-label">Temp (C)</label>
               <input type="number" id="f-wq-temp" class="form-input" step="0.1" placeholder="28" />
             </div>
             <div class="form-group half">
-              <label class="form-label" for="f-wq-do">Dissolved O2 (mg/L)</label>
+              <label class="form-label">Dissolved O2 (mg/L)</label>
               <input type="number" id="f-wq-do" class="form-input" step="0.1" placeholder="6.5" />
             </div>
           </div>
@@ -519,7 +513,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="f-notes">Notes (optional)</label>
+            <label class="form-label">Notes (optional)</label>
             <textarea id="f-notes" class="form-textarea" placeholder="Quick notes..." rows="2"></textarea>
           </div>
           <div class="gps-bar">
@@ -636,8 +630,146 @@
   </div>
 </div>
   
-  <div id="screen-safety" class="screen"><header class="dash-header"><button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button></header><main class="dash-scroll"><div class="dash-section"><div class="feed-empty"><p>Safety centre — next build</p></div></div></main></div>
-    <div id="screen-more" class="screen">
+<div id="screen-safety" class="screen">
+  <header class="dash-header">
+    <button class="back-pill" onclick="Nav.go('dashboard')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="dash-header-left"><div class="dash-ranger">Safety Centre</div></div>
+  </header>
+  <main class="dash-scroll">
+
+    <!-- CHECK-IN STATUS -->
+    <div class="dash-section">
+      <div class="safety-checkin-card" id="sc-checkin-card">
+        <div class="sc-header">
+          <div class="sc-pulse" id="sc-pulse"></div>
+          <span class="sc-status-label" id="sc-status-label">No active patrol</span>
+        </div>
+        <div class="sc-countdown" id="sc-countdown">--:--</div>
+        <div class="sc-countdown-label">until next check-in</div>
+        <button class="sc-safe-btn" onclick="Safety.checkIn(); SafetyCentre.refresh()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          I'm Safe — Check In Now
+        </button>
+      </div>
+    </div>
+
+    <!-- INTERVAL SELECTOR -->
+    <div class="dash-section">
+      <div class="section-label">Check-in Interval</div>
+      <div class="sc-interval-card">
+        <div class="sc-interval-grid" id="sc-interval-grid">
+          <button class="sc-interval-btn" data-mins="30" onclick="SafetyCentre.setInterval(30)">30 min</button>
+          <button class="sc-interval-btn" data-mins="60" onclick="SafetyCentre.setInterval(60)">60 min</button>
+          <button class="sc-interval-btn active" data-mins="90" onclick="SafetyCentre.setInterval(90)">90 min</button>
+          <button class="sc-interval-btn" data-mins="120" onclick="SafetyCentre.setInterval(120)">2 hrs</button>
+        </div>
+        <p class="sc-interval-note">If you miss a check-in, an SOS alert is automatically sent to Port Stewart base via Garmin inReach satellite.</p>
+      </div>
+    </div>
+
+    <!-- UV + CONDITIONS -->
+    <div class="dash-section">
+      <div class="section-label">Current Conditions</div>
+      <div class="sc-conditions-card">
+        <div class="sc-condition-row">
+          <div class="sc-cond-item" id="sc-uv-item">
+            <div class="sc-cond-icon">☀️</div>
+            <div class="sc-cond-val" id="sc-uv-val">--</div>
+            <div class="sc-cond-lbl">UV Index</div>
+          </div>
+          <div class="sc-cond-item">
+            <div class="sc-cond-icon">🌡️</div>
+            <div class="sc-cond-val" id="sc-temp-val">--</div>
+            <div class="sc-cond-lbl">Temp</div>
+          </div>
+          <div class="sc-cond-item">
+            <div class="sc-cond-icon">💧</div>
+            <div class="sc-cond-val" id="sc-water-rec">4L</div>
+            <div class="sc-cond-lbl">Water/day</div>
+          </div>
+          <div class="sc-cond-item">
+            <div class="sc-cond-icon">⏱️</div>
+            <div class="sc-cond-val" id="sc-max-patrol">2hr</div>
+            <div class="sc-cond-lbl">Max patrol</div>
+          </div>
+        </div>
+        <div class="sc-uv-bar">
+          <div class="sc-uv-fill" id="sc-uv-fill"></div>
+        </div>
+        <div class="sc-uv-rec" id="sc-uv-rec">Calculating conditions...</div>
+      </div>
+    </div>
+
+    <!-- HYDRATION REMINDERS -->
+    <div class="dash-section">
+      <div class="section-label">Hydration & Heat Safety</div>
+      <div class="sc-tips-card">
+        <div class="sc-tip"><span class="sc-tip-dot water"></span><span>Drink 500ml every 30 minutes during patrol</span></div>
+        <div class="sc-tip"><span class="sc-tip-dot warning"></span><span>Take a shaded break every 45 minutes when UV ≥ 8</span></div>
+        <div class="sc-tip"><span class="sc-tip-dot danger"></span><span>Stop patrol immediately if experiencing dizziness, nausea, or confusion</span></div>
+        <div class="sc-tip"><span class="sc-tip-dot warning"></span><span>Wear SPF 50+ sunscreen, hat, and long sleeves</span></div>
+        <div class="sc-tip"><span class="sc-tip-dot danger"></span><span>Heat exhaustion signs: heavy sweating, weakness, cold/pale skin, fast/weak pulse</span></div>
+      </div>
+    </div>
+
+    <!-- PRE-PATROL CHECKLIST -->
+    <div class="dash-section">
+      <div class="section-label">Pre-Patrol Checklist</div>
+      <div class="sc-checklist-card" id="sc-checklist">
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>Water (minimum 4L per ranger)</span>
+        </div>
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>First aid kit in vehicle</span>
+        </div>
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>Garmin inReach charged and activated</span>
+        </div>
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>Phone charged (≥ 80%)</span>
+        </div>
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>Patrol route logged with base</span>
+        </div>
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>SPF 50+, hat, long sleeves</span>
+        </div>
+        <div class="sc-check-item" onclick="SafetyCentre.toggleCheck(this)">
+          <div class="sc-check-box"></div><span>Two-way radio charged</span>
+        </div>
+        <div class="sc-checklist-progress">
+          <div class="sc-checklist-bar"><div class="sc-checklist-fill" id="sc-checklist-fill"></div></div>
+          <span id="sc-checklist-count">0/7 complete</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOS -->
+    <div class="dash-section">
+      <div class="section-label">Emergency</div>
+      <div class="sc-sos-card">
+        <div class="sc-sos-info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div>
+            <div class="sc-sos-title">SOS Emergency Alert</div>
+            <div class="sc-sos-sub">Sends your GPS location to Port Stewart base via Garmin inReach satellite</div>
+          </div>
+        </div>
+        <button class="sc-sos-btn" onclick="Safety.sos()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          SEND SOS
+        </button>
+      </div>
+    </div>
+
+    <div style="height:24px"></div>
+  </main>
+</div>    
+
+<div id="screen-more" class="screen">
     <header class="dash-header">
       <button class="back-pill" onclick="Nav.go('dashboard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
       <div class="dash-header-left"><div class="dash-ranger">Settings</div></div>
@@ -657,6 +789,10 @@
         <button class="more-btn" onclick="App.logout()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/></svg>
           Switch Ranger / Log Out
+        </button>
+        <button class="more-btn" onclick="Nav.go('safety')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Safety Centre
         </button>
       </div>
       <div class="dash-section">
@@ -697,8 +833,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="/db.js"></script>
 <script src="/sync.js"></script>
+<script src="/pin-auth.js"></script>
 <script src="/reports.js"></script>
-<script src="/pin-auth.js"></script> 
 <script src="/app.js"></script>
 </body>
 </html>
