@@ -312,6 +312,7 @@ var Nav={go:function(screen){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
   var t=document.getElementById('screen-'+screen);if(t)t.classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(function(b){b.classList.toggle('active',b.dataset.screen===screen)});
+  var nav=document.querySelector('.bottom-nav');if(nav)nav.style.display=screen==='login'?'none':'';
   if(screen==='dashboard'){App.updateCoverage();App.updateSync();App.updateSafety();App.updateSpecies();App.updateTimeline()}
   if(screen==='record'){
     document.getElementById('record-no-patrol').style.display='none';document.getElementById('record-type-picker').style.display='block';document.getElementById('record-form-area').style.display='none';
@@ -410,7 +411,14 @@ var PatrolMap={
     }
     PatrolMap.renderGapChips(allGaps);
     PatrolMap.renderStats(todayPatrols,allPoints);
-    if(PatrolMap.heatOn&&allPoints.length>0)PatrolMap.renderHeatmap(allPoints);
+    if(PatrolMap.heatOn){
+      var heatPoints=[];
+      for(var k=0;k<allPatrols.length;k++){
+        var hpts=await LocalDB.getAllByIndex('tracks','patrol_id',allPatrols[k].id);
+        heatPoints=heatPoints.concat(hpts)
+      }
+      if(heatPoints.length>0)PatrolMap.renderHeatmap(heatPoints)
+    }
     if(allPoints.length>0){
       var latlngs=allPoints.map(function(p){return[p.lat,p.lng]});
       PatrolMap.map.fitBounds(L.latLngBounds(latlngs),{padding:[30,30]})
@@ -479,8 +487,7 @@ var PatrolMap={
     if(btn)btn.classList.toggle('map-ctrl-btn--on',PatrolMap.heatOn);
     if(PatrolMap.heatOn){
       LocalDB.getAll('patrols').then(function(allPatrols){
-        var today=new Date().toISOString().split('T')[0];
-        var ids=allPatrols.filter(function(p){return p.start_time.startsWith(today)}).map(function(p){return p.id});
+        var ids=allPatrols.map(function(p){return p.id});
         Promise.all(ids.map(function(pid){return LocalDB.getAllByIndex('tracks','patrol_id',pid)})).then(function(results){
           var pts=[].concat.apply([],results);
           if(pts.length>0)PatrolMap.renderHeatmap(pts)

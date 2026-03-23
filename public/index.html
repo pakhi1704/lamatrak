@@ -263,29 +263,6 @@
 
       <div style="height: 24px;"></div>
     </main>
-
-    <nav class="bottom-nav">
-      <button class="nav-tab active" onclick="Nav.go('dashboard')" data-screen="dashboard">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-        <span>Home</span><div class="nav-line"></div>
-      </button>
-      <button class="nav-tab" onclick="Nav.go('map')" data-screen="map">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
-        <span>Map</span><div class="nav-line"></div>
-      </button>
-      <button class="nav-tab" onclick="Nav.go('record')" data-screen="record">
-        <div class="nav-record-ring"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg></div>
-        <span>Record</span>
-      </button>
-      <button class="nav-tab" onclick="Nav.go('safety')" data-screen="safety">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>Safety</span><div class="nav-line"></div>
-      </button>
-      <button class="nav-tab" onclick="Nav.go('more')" data-screen="more">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        <span>More</span><div class="nav-line"></div>
-      </button>
-    </nav>
   </div>
 
   <!-- Placeholder screens -->
@@ -589,6 +566,29 @@
       </div>
     </main>
   </div>
+
+  <nav class="bottom-nav" style="display:none">
+    <button class="nav-tab active" onclick="Nav.go('dashboard')" data-screen="dashboard">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      <span>Home</span><div class="nav-line"></div>
+    </button>
+    <button class="nav-tab" onclick="Nav.go('map')" data-screen="map">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+      <span>Map</span><div class="nav-line"></div>
+    </button>
+    <button class="nav-tab" onclick="Nav.go('record')" data-screen="record">
+      <div class="nav-record-ring"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg></div>
+      <span>Record</span>
+    </button>
+    <button class="nav-tab" onclick="Nav.go('safety')" data-screen="safety">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Safety</span><div class="nav-line"></div>
+    </button>
+    <button class="nav-tab" onclick="Nav.go('more')" data-screen="more">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span>More</span><div class="nav-line"></div>
+    </button>
+  </nav>
 </div>
 <script src="/db.js"></script>
 <script src="/sync.js"></script>
