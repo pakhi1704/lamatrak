@@ -8,6 +8,7 @@
   <title>LamaTrak</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/pin-auth-styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
@@ -21,7 +22,7 @@
       <div class="login-glow"></div>
       <div class="login-content">
         <div class="login-logo">
-          <img src="/logo.png" alt="LamaTrak" style="width: 80px; height: 80px; object-fit: contain;" />
+          <img src="/logo2.png" alt="LamaTrak" style="width: 220px; height: 220px; object-fit: contain;" />
         </div>
         <h1 class="login-title">LamaTrak</h1>
         <p class="login-sub">Lama Lama Ranger Patrol System</p>
@@ -39,7 +40,7 @@
               <option value="marina_plains">Marina Plains</option>
             </select>
           </div>
-          <button class="login-btn" onclick="App.login()">
+          <button class="login-btn" onclick="PinAuth.initiateLogin()">
             <span>Start Patrol Day</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
           </button>
@@ -643,6 +644,10 @@
           <div class="settings-row"><span class="settings-label">Role</span><span class="settings-val" id="set-role">--</span></div>
           <div class="settings-row"><span class="settings-label">Active Site</span><span class="settings-val" id="set-site">--</span></div>
         </div>
+        <button class="more-btn" onclick="PinAuth.initiateChangePin()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Change PIN
+        </button>
         <button class="more-btn" onclick="App.logout()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/></svg>
           Switch Ranger / Log Out
@@ -659,7 +664,7 @@
     </main>
   </div>
 
-  <nav class="bottom-nav" style="display:none">
+  <nav class="bottom-nav">
     <button class="nav-tab active" onclick="Nav.go('dashboard')" data-screen="dashboard">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
       <span>Home</span><div class="nav-line"></div>
@@ -686,7 +691,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="/db.js"></script>
 <script src="/sync.js"></script>
+<<<<<<< HEAD
 <script src="/reports.js"></script>
+=======
+<script src="/pin-auth.js"></script> 
+>>>>>>> 41229f830956c8be43a6f8c9ba6b6c81c5c8fdb0
 <script src="/app.js"></script>
 </body>
 </html>

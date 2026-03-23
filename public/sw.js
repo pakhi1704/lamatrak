@@ -1,5 +1,5 @@
 var CACHE_NAME = 'lamatrak-app';
-var ASSETS = ['/', '/index.html', '/styles.css', '/db.js', '/sync.js', '/app.js', '/manifest.json'];
+var ASSETS = ['/', '/index.html', '/styles.css', '/pin-auth-styles.css', '/db.js', '/sync.js', '/pin-auth.js', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', function(event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function(cache) { return cache.addAll(ASSETS); }));
