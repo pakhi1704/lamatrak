@@ -47,7 +47,7 @@ var App={
   loadUsers:async function(){
     var sel=document.getElementById('login-user'),users=[];
     try{var r=await fetch('/api/users');if(r.ok){users=await r.json();for(var i=0;i<users.length;i++)await LocalDB.put('users',users[i])}}catch(e){users=await LocalDB.getAll('users')}
-    if(users.length===0){users=[{id:'u-elder-001',name:'Karen Liddy',role:'elder'},{id:'u-senior-001',name:'Senior Ranger',role:'senior_ranger'},{id:'u-ranger-001',name:'Ranger 1',role:'ranger'},{id:'u-ranger-002',name:'Ranger 2',role:'ranger'}];for(var j=0;j<users.length;j++)await LocalDB.put('users',users[j])}
+    if(users.length===0){users=[{id:'u-elder-001',name:'Karen Liddy',role:'elder'},{id:'u-senior-001',name:'Senior Ranger',role:'senior_ranger'},{id:'u-ranger-001',name:'Krishna Gupta',role:'ranger'},{id:'u-ranger-002',name:'Ranger 2',role:'ranger'}];for(var j=0;j<users.length;j++)await LocalDB.put('users',users[j])}
     sel.innerHTML=users.map(function(u){return'<option value="'+u.id+'">'+u.name+' ('+u.role.replace('_',' ')+')</option>'}).join('')
   },
 
