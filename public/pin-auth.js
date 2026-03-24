@@ -18,18 +18,22 @@ var PinAuth = {
   attempts: 0,
   lockoutUntil: null,
 
-  /* ── SHA-256 hash (Web Crypto API) ── */
-  hashPin: async function(pin) {
+  /* ── PBKDF2 hash (Web Crypto API, per-user salt) ── */
+  hashPin: async function(pin, salt) {
     var enc = new TextEncoder();
-    var data = enc.encode('lamatrak-salt-v1:' + pin);
-    var hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(function(b) {
+    var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveBits']);
+    var derived = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: enc.encode(salt), iterations: 200000, hash: 'SHA-256' },
+      keyMaterial, 256
+    );
+    return Array.from(new Uint8Array(derived)).map(function(b) {
       return b.toString(16).padStart(2, '0');
     }).join('');
   },
 
   /* ── Storage keys ── */
   pinKey: function(userId) { return 'pin_hash_' + userId; },
+  pinSaltKey: function(userId) { return 'pin_salt_' + userId; },
   lockKey: function(userId) { return 'pin_lock_' + userId; },
   attemptsKey: function(userId) { return 'pin_attempts_' + userId; },
 
@@ -40,17 +44,24 @@ var PinAuth = {
 
   /* ── Save a PIN ── */
   savePin: async function(userId, pin) {
-    var hash = await PinAuth.hashPin(pin);
+    var saltArr = new Uint8Array(16);
+    crypto.getRandomValues(saltArr);
+    var salt = Array.from(saltArr).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    localStorage.setItem(PinAuth.pinSaltKey(userId), salt);
+    var hash = await PinAuth.hashPin(pin, salt);
     localStorage.setItem(PinAuth.pinKey(userId), hash);
     localStorage.removeItem(PinAuth.attemptsKey(userId));
     localStorage.removeItem(PinAuth.lockKey(userId));
   },
 
   /* ── Verify a PIN ── */
+  /* Returns true (correct), false (wrong), or null (old SHA-256 format — migration needed) */
   verifyPin: async function(userId, pin) {
     var stored = localStorage.getItem(PinAuth.pinKey(userId));
     if (!stored) return false;
-    var hash = await PinAuth.hashPin(pin);
+    var salt = localStorage.getItem(PinAuth.pinSaltKey(userId));
+    if (!salt) return null; // old SHA-256 hash detected — signal migration
+    var hash = await PinAuth.hashPin(pin, salt);
     return hash === stored;
   },
 
@@ -89,7 +100,7 @@ var PinAuth = {
   showPinPad: function(userId, userName, userRole, opts) {
     opts = opts || {};
     PinAuth.selectedUserId = userId;
-    PinAuth.selectedUserName = userName;
+    PinAuth.selectedUserName = escapeHTML(userName);
     PinAuth.selectedUserRole = userRole;
     PinAuth.enteredPin = '';
     PinAuth.isSettingPin = false;
@@ -325,7 +336,14 @@ pressKey: function(key, btn) {
     }
 
     var ok = await PinAuth.verifyPin(userId, PinAuth.enteredPin);
-    if (ok) {
+    if (ok === null) {
+      // Old SHA-256 hash detected — clear it and prompt re-setup
+      PinAuth.resetPin(userId);
+      PinAuth.showError('Security upgrade — please reset your PIN');
+      setTimeout(function() {
+        PinAuth.showPinPad(userId, PinAuth.selectedUserName, PinAuth.selectedUserRole, { forceSetup: true });
+      }, 1200);
+    } else if (ok) {
       PinAuth.clearAttempts(userId);
       PinAuth.showSuccess('Welcome back!');
       setTimeout(function() { PinAuth.completeLogin(); }, 600);
@@ -389,6 +407,13 @@ pressKey: function(key, btn) {
     activeSite = document.getElementById('login-site').value;
     localStorage.setItem('lamatrak_user', JSON.stringify(currentUser));
     localStorage.setItem('lamatrak_site', activeSite);
+    // Generate session token (client-side UUID, registered server-side on first sync)
+    if (!localStorage.getItem('lamatrak_token')) {
+      var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+        return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+      });
+      localStorage.setItem('lamatrak_token', token);
+    }
     var overlay = document.getElementById('pin-overlay');
     if (overlay) { overlay.classList.add('pin-overlay--exit'); setTimeout(function() { overlay.remove(); }, 400); }
     App.enterDashboard();

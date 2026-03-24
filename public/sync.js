@@ -43,7 +43,10 @@ var SyncEngine = {
       var data = await LocalDB.getUnsyncedData();
       var total = data.patrols.length + data.observations.length + data.tracks.length + data.checkins.length;
       if (total === 0) { SyncEngine.isSyncing = false; SyncEngine.updateUI(); Toast.show('Up to date', 'success'); return; }
-      var response = await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      var token = localStorage.getItem('lamatrak_token') || '';
+      var userData = JSON.parse(localStorage.getItem('lamatrak_user') || '{}');
+      data.user_id = userData.id || '';
+      var response = await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(data) });
       if (!response.ok) throw new Error('Sync failed: ' + response.status);
       var result = await response.json();
       if (data.patrols.length) await LocalDB.markSynced('patrols', data.patrols.map(function(p) { return p.id; }));

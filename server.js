@@ -2,6 +2,7 @@ const express = require('express');
 const initSqlJs = require('sql.js');
 const multer = require('multer');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
 
@@ -9,22 +10,38 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 let db;
 
-app.use(cors({ origin: ['http://localhost:3000', 'http://127.0.0.1:3000'] }));
-app.use(express.json({ limit: '50mb' }));
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin: function(origin, cb) {
+    if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, `${Date.now()}${path.extname(file.originalname).toLowerCase()}`)
-});
-function imageOnlyFilter(req, file, cb) {
-  if (file.mimetype.startsWith('image/')) cb(null, true);
-  else cb(new Error('Only image files are allowed'), false);
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+function checkMagicBytes(buf) {
+  if (!buf || buf.length < 4) return false;
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true; // JPEG
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true; // PNG
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return true; // GIF
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf.length >= 12 && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return true; // WebP
+  return false;
 }
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 }, fileFilter: imageOnlyFilter });
+function imageOnlyFilter(req, file, cb) {
+  if (!ALLOWED_MIME_TYPES.includes(file.mimetype))
+    return cb(new Error('Only JPEG, PNG, GIF, and WebP images are allowed'), false);
+  cb(null, true);
+}
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: imageOnlyFilter });
 app.use('/uploads', express.static(uploadDir));
 
 function saveDB() {
@@ -100,7 +117,36 @@ async function startServer() {
       recorded_at TEXT NOT NULL, synced_at TEXT
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      last_seen_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
   saveDB();
+
+  /* ── Auth middleware ── */
+  function authenticate(req, res, next) {
+    var auth = req.headers['authorization'] || '';
+    var token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
+    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    db.run("DELETE FROM sessions WHERE last_seen_at < datetime('now', '-30 days')");
+    var existing = query('SELECT user_id FROM sessions WHERE token = ?', [token]);
+    if (existing.length > 0) {
+      run("UPDATE sessions SET last_seen_at = datetime('now') WHERE token = ?", [token]);
+      req.userId = existing[0].user_id;
+      return next();
+    }
+    var claimedId = (req.body && req.body.user_id) || req.query.user_id;
+    if (!claimedId) return res.status(401).json({ error: 'Unknown token' });
+    var user = query('SELECT id FROM users WHERE id = ?', [claimedId]);
+    if (user.length === 0) return res.status(401).json({ error: 'Unknown user' });
+    run('INSERT INTO sessions (token, user_id) VALUES (?, ?)', [token, claimedId]);
+    req.userId = claimedId;
+    next();
+  }
 
   const userCount = query('SELECT COUNT(*) as c FROM users')[0].c;
   if (userCount === 0) {
@@ -114,7 +160,7 @@ async function startServer() {
   app.get('/api/users', (req, res) => {
     res.json(query('SELECT id, name, role, created_at FROM users'));
   });
-  app.post('/api/users', (req, res) => {
+  app.post('/api/users', authenticate, (req, res) => {
     const { id, name, role } = req.body;
     const VALID_ROLES = ['ranger', 'senior_ranger', 'elder'];
     if (!id || !name || !role) return res.status(400).json({ error: 'id, name and role are required' });
@@ -132,7 +178,7 @@ async function startServer() {
     sql += ' ORDER BY start_time DESC';
     res.json(query(sql, params.length ? params : undefined));
   });
-  app.post('/api/patrols', (req, res) => {
+  app.post('/api/patrols', authenticate, (req, res) => {
     const { id, ranger_id, patrol_type, start_time, start_lat, start_lng, notes } = req.body;
     const VALID_TYPES = ['land', 'sea', 'cultural_site'];
     if (!id || !ranger_id || !patrol_type || !start_time) return res.status(400).json({ error: 'id, ranger_id, patrol_type and start_time are required' });
@@ -140,15 +186,17 @@ async function startServer() {
     try { run('INSERT INTO patrols (id,ranger_id,patrol_type,start_time,start_lat,start_lng,notes) VALUES (?,?,?,?,?,?,?)', [id,ranger_id,patrol_type,start_time,start_lat||null,start_lng||null,notes||'']); res.json({success:true}); }
     catch (e) { res.status(400).json({ error: 'Could not create patrol' }); }
   });
-  app.put('/api/patrols/:id', (req, res) => {
+  app.put('/api/patrols/:id', authenticate, (req, res) => {
     const { end_time, end_lat, end_lng, status, notes } = req.body;
     const VALID_STATUS = ['active', 'completed', 'cancelled'];
     if (status && !VALID_STATUS.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    var patrol = query('SELECT ranger_id FROM patrols WHERE id = ?', [req.params.id]);
+    if (patrol.length > 0 && patrol[0].ranger_id !== req.userId) return res.status(403).json({ error: 'Not your patrol' });
     try { run("UPDATE patrols SET end_time=?,end_lat=?,end_lng=?,status=?,notes=?,updated_at=datetime('now') WHERE id=?", [end_time||null,end_lat||null,end_lng||null,status||'active',notes||'',req.params.id]); res.json({success:true}); }
     catch (e) { res.status(400).json({ error: 'Could not update patrol' }); }
   });
 
-  app.post('/api/tracks', (req, res) => {
+  app.post('/api/tracks', authenticate, (req, res) => {
     const { points } = req.body;
     try { for (const p of points) run('INSERT OR IGNORE INTO patrol_tracks (id,patrol_id,lat,lng,altitude,accuracy,recorded_at) VALUES (?,?,?,?,?,?,?)', [p.id,p.patrol_id,p.lat,p.lng,p.altitude||null,p.accuracy||null,p.recorded_at]); res.json({ success: true, count: points.length }); }
     catch (e) { res.status(400).json({ error: e.message }); }
@@ -166,7 +214,7 @@ async function startServer() {
     sql += ' ORDER BY recorded_at DESC';
     res.json(query(sql, params.length ? params : undefined));
   });
-  app.post('/api/observations', (req, res) => {
+  app.post('/api/observations', authenticate, (req, res) => {
     const { id, patrol_id, type, lat, lng, data, photo_paths, is_restricted, recorded_at } = req.body;
     const VALID_OBS_TYPES = ['weed', 'feral_animal', 'marine', 'water_quality', 'cultural_site'];
     if (!id || !patrol_id || !type || !recorded_at) return res.status(400).json({ error: 'id, patrol_id, type and recorded_at are required' });
@@ -178,9 +226,14 @@ async function startServer() {
     } catch (e) { res.status(400).json({ error: 'Could not create observation' }); }
   });
 
-  app.post('/api/upload', upload.single('photo'), (req, res) => {
+  app.post('/api/upload', authenticate, upload.single('photo'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
-    res.json({ path: `/uploads/${req.file.filename}`, filename: req.file.filename });
+    if (!checkMagicBytes(req.file.buffer))
+      return res.status(400).json({ error: 'File content does not match an allowed image format' });
+    var ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' }[req.file.mimetype] || '.bin';
+    var filename = Date.now() + ext;
+    fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+    res.json({ path: '/uploads/' + filename, filename: filename });
   });
 
   app.get('/api/checkins', (req, res) => {
@@ -192,7 +245,7 @@ async function startServer() {
     sql += ' ORDER BY recorded_at DESC';
     res.json(query(sql, params.length ? params : undefined));
   });
-  app.post('/api/checkins', (req, res) => {
+  app.post('/api/checkins', authenticate, (req, res) => {
     const { id, ranger_id, patrol_id, lat, lng, status, recorded_at } = req.body;
     const VALID_CHECKIN_STATUS = ['ok', 'help', 'sos', 'missed'];
     if (!id || !ranger_id || !recorded_at) return res.status(400).json({ error: 'id, ranger_id and recorded_at are required' });
@@ -201,7 +254,7 @@ async function startServer() {
     catch (e) { res.status(400).json({ error: 'Could not create checkin' }); }
   });
 
-  app.post('/api/sync', (req, res) => {
+  app.post('/api/sync', authenticate, (req, res) => {
     const { patrols = [], observations = [], tracks = [], checkins: ck = [] } = req.body;
     const r = { patrols: 0, observations: 0, tracks: 0, checkins: 0, conflicts: [] };
     try {

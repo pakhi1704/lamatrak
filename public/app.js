@@ -1,3 +1,5 @@
+function escapeHTML(str){if(str==null)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
 var currentUser=null,activePatrol=null,activeSite='port_stewart',gpsWatchId=null,trackPointCount=0,patrolTimer=null,checkinTimer=null,checkinIntervalMs=90*60*1000,nextCheckinTime=null,patrolObsCount=0,safetyInterval=null,weatherData=null,weatherInterval=null;
 var SITES={port_stewart:'Port Stewart',silver_plains:'Silver Plains',lilyvale:'Lilyvale',marina_plains:'Marina Plains'};
 
@@ -55,7 +57,7 @@ var App={
     var sel=document.getElementById('login-user'),users=[];
     try{var r=await fetch('/api/users');if(r.ok){users=await r.json();for(var i=0;i<users.length;i++)await LocalDB.put('users',users[i])}}catch(e){users=await LocalDB.getAll('users')}
     if(users.length===0){users=[{id:'u-elder-001',name:'Karen Liddy',role:'elder'},{id:'u-senior-001',name:'Senior Ranger',role:'senior_ranger'},{id:'u-ranger-001',name:'Krishna Gupta',role:'ranger'},{id:'u-ranger-002',name:'Junior Ranger',role:'ranger'}];for(var j=0;j<users.length;j++)await LocalDB.put('users',users[j])}
-    sel.innerHTML=users.map(function(u){return'<option value="'+u.id+'" data-role="'+u.role+'">'+u.name+' ('+u.role.replace('_',' ')+')</option>'}).join('')
+    sel.innerHTML=users.map(function(u){return'<option value="'+escapeHTML(u.id)+'" data-role="'+escapeHTML(u.role)+'">'+escapeHTML(u.name)+' ('+escapeHTML(u.role.replace('_',' '))+')</option>'}).join('')
   },
 
   login:function(){
@@ -70,7 +72,7 @@ var App={
     App.enterDashboard()
   },
 
-  logout:function(){currentUser=null;localStorage.removeItem('lamatrak_user');Nav.go('login')},
+  logout:function(){currentUser=null;localStorage.removeItem('lamatrak_user');localStorage.removeItem('lamatrak_token');Nav.go('login')},
 
   enterDashboard:function(){
     var h=new Date().getHours();
@@ -272,12 +274,12 @@ var App={
     allO.filter(function(o){return o.recorded_at&&o.recorded_at.startsWith(td)}).forEach(function(o){
       var d=typeof o.data==='string'?JSON.parse(o.data):o.data;var title='';
       switch(o.type){
-        case'weed':var sp=(d.species||'').split('(');title='Weed: '+(sp[1]?sp[1].replace(')',''):sp[0])+' \u2014 '+(d.density||'');break;
-        case'feral_animal':title=d.count+' wild '+(d.species||'animal')+'(s) \u2014 '+(d.behaviour||'');break;
-        case'marine':title=d.count+' '+(d.species||'').replace(/_/g,' ')+' \u2014 '+(d.activity||'');break;
-        case'water_quality':title='Water \u2014 pH '+(d.ph||'?')+', '+(d.visual||'').replace(/_/g,' ');break;
-        case'cultural_site':title='Cultural site \u2014 '+(d.site_condition||'checked');break;
-        default:title=o.type}
+        case'weed':var sp=(d.species||'').split('(');title='Weed: '+escapeHTML(sp[1]?sp[1].replace(')',''):sp[0])+' \u2014 '+escapeHTML(d.density||'');break;
+        case'feral_animal':title=escapeHTML(String(d.count))+' wild '+escapeHTML(d.species||'animal')+'(s) \u2014 '+escapeHTML(d.behaviour||'');break;
+        case'marine':title=escapeHTML(String(d.count))+' '+escapeHTML((d.species||'').replace(/_/g,' '))+' \u2014 '+escapeHTML(d.activity||'');break;
+        case'water_quality':title='Water \u2014 pH '+escapeHTML(String(d.ph||'?'))+', '+escapeHTML((d.visual||'').replace(/_/g,' '));break;
+        case'cultural_site':title='Cultural site \u2014 '+escapeHTML(d.site_condition||'checked');break;
+        default:title=escapeHTML(o.type)}
       var patrol=allP.find(function(p){return p.id===o.patrol_id});
       items.push({time:o.recorded_at,type:o.type,ranger:patrol?(uMap[patrol.ranger_id]||'Ranger'):'Ranger',text:title,synced:o.synced})
     });
@@ -292,7 +294,7 @@ var App={
       var badges='';
       if(item.synced===0)badges+='<span class="feed-badge" style="background:var(--warning-light);color:var(--warning)">Pending</span>';
       if(item.status==='completed')badges+='<span class="feed-badge" style="background:var(--success-light);color:var(--success)">Done</span>';
-      return'<div class="feed-item '+item.type+'" style="animation-delay:'+(idx*0.05)+'s">'+icon+'<div class="feed-body"><div class="feed-title">'+item.text+'</div><div class="feed-meta"><span>'+item.ranger+'</span><span>'+time+'</span>'+badges+'</div></div></div>'
+      return'<div class="feed-item '+escapeHTML(item.type)+'" style="animation-delay:'+(idx*0.05)+'s">'+icon+'<div class="feed-body"><div class="feed-title">'+item.text+'</div><div class="feed-meta"><span>'+escapeHTML(item.ranger)+'</span><span>'+time+'</span>'+badges+'</div></div></div>'
     }).join('')
   },
 

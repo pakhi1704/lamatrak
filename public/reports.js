@@ -80,7 +80,7 @@ var Reports = {
       data.patrols.forEach(function(p) {
         var ranger = data.userMap[p.ranger_id] ? data.userMap[p.ranger_id].name : 'Ranger';
         var date = p.start_time ? p.start_time.split('T')[0] : '--';
-        html += '<tr><td>' + date + '</td><td>' + ranger + '</td><td>' + p.patrol_type.replace('_', ' ') + '</td><td>' + p.status + '</td></tr>';
+        html += '<tr><td>' + date + '</td><td>' + escapeHTML(ranger) + '</td><td>' + escapeHTML(p.patrol_type.replace('_', ' ')) + '</td><td>' + escapeHTML(p.status) + '</td></tr>';
       });
       html += '</tbody></table>';
     }
@@ -96,14 +96,14 @@ var Reports = {
       data.obs.forEach(function(o) {
         var d = typeof o.data === 'string' ? JSON.parse(o.data) : o.data;
         var detail = '';
-        if (o.type === 'weed') detail = (d.species || '') + ' — ' + (d.density || '');
-        else if (o.type === 'feral_animal') detail = d.count + ' ' + (d.species || '') + ' — ' + (d.behaviour || '');
-        else if (o.type === 'marine') detail = d.count + ' ' + (d.species || '').replace(/_/g, ' ') + ' — ' + (d.activity || '');
-        else if (o.type === 'water_quality') detail = 'pH ' + (d.ph || '?') + ', ' + (d.visual || '').replace(/_/g, ' ');
-        else if (o.type === 'cultural_site') detail = 'Condition: ' + (d.site_condition || '') + ' — ' + (d.access_status || '');
+        if (o.type === 'weed') detail = escapeHTML(d.species || '') + ' — ' + escapeHTML(d.density || '');
+        else if (o.type === 'feral_animal') detail = escapeHTML(String(d.count)) + ' ' + escapeHTML(d.species || '') + ' — ' + escapeHTML(d.behaviour || '');
+        else if (o.type === 'marine') detail = escapeHTML(String(d.count)) + ' ' + escapeHTML((d.species || '').replace(/_/g, ' ')) + ' — ' + escapeHTML(d.activity || '');
+        else if (o.type === 'water_quality') detail = 'pH ' + escapeHTML(String(d.ph || '?')) + ', ' + escapeHTML((d.visual || '').replace(/_/g, ' '));
+        else if (o.type === 'cultural_site') detail = 'Condition: ' + escapeHTML(d.site_condition || '') + ' — ' + escapeHTML(d.access_status || '');
         var gps = o.lat ? o.lat.toFixed(4) + ', ' + o.lng.toFixed(4) : '--';
         var date = o.recorded_at ? o.recorded_at.split('T')[0] : '--';
-        html += '<tr><td>' + date + '</td><td>' + o.type.replace('_', ' ') + '</td><td>' + detail + '</td><td>' + gps + '</td></tr>';
+        html += '<tr><td>' + date + '</td><td>' + escapeHTML(o.type.replace('_', ' ')) + '</td><td>' + detail + '</td><td>' + gps + '</td></tr>';
       });
       html += '</tbody></table>';
     }
